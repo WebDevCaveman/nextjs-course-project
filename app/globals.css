@@ -1,26 +1,104 @@
 @import "tailwindcss";
+@import "./tokens.css";
+@import "devicon/devicon.min.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ══ Fonts ══ Self-hosted. See FONTS.md — files go in public/fonts/. ══ */
+
+/* Both families ship as variable fonts — one file each covers 400/500/600/700. */
+
+@font-face { font-family: "Switzer"; src: url("/fonts/Switzer-Variable.woff2") format("woff2");
+             font-weight: 100 900; font-style: normal; font-display: swap; }
+
+@font-face { font-family: "Inter"; src: url("/fonts/Inter-Variable.woff2") format("woff2");
+             font-weight: 100 900; font-style: normal; font-display: swap; }
+
+/* ══ Theme bridge ══ Maps the 530 Figma variables onto Tailwind names.
+     Every utility in STYLING.md resolves through here. ══ */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Switzer", "Inter", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  --color-base:        var(--bg-primary);
+  --color-subtle:      var(--bg-secondary);
+  --color-muted:       var(--bg-tertiary);
+  --color-fg:          var(--text-primary);
+  --color-fg-muted:    var(--text-secondary);
+  --color-fg-subtle:   var(--text-tertiary);
+  --color-line:        var(--border-secondary);
+  --color-line-strong: var(--border-primary);
+
+  --color-accent:      var(--red-500);
+  --color-accent-fg:   var(--red-600);
+  --color-accent-soft: color-mix(in srgb, var(--red-500) 12%, transparent);
+
+  --color-success:     var(--text-success-primary);
+  --color-success-bg:  var(--bg-success-primary);
+  --color-warning:     var(--text-warning-primary);
+  --color-warning-bg:  var(--bg-warning-primary);
+  --color-info:        var(--text-info-primary);
+  --color-info-bg:     var(--bg-info-primary);
+  --color-danger:      var(--text-error-primary);
+  --color-danger-bg:   var(--bg-error-primary);
+
+  --radius-sm: 8px;  --radius-md: 10px; --radius-lg: 12px;
+  --radius-xl: 14px; --radius-2xl: 16px;
+
+  --text-2xs: 10.5px; --text-2xs--line-height: 14px;
+  --text-xs:  11.5px; --text-xs--line-height:  16px;
+  --text-sm:  12.5px; --text-sm--line-height:  18px;
+  --text-base:  14px; --text-base--line-height: 21px;
+  --text-md:    15px; --text-md--line-height:   23px;
+  --text-lg:    16px; --text-lg--line-height:   22px;
+  --text-xl:    18px; --text-xl--line-height:   24px;
+  --text-2xl:   22px; --text-2xl--line-height:  28px;
+  --text-3xl:   26px; --text-3xl--line-height:  30px;
+  --text-4xl:   34px; --text-4xl--line-height:  40px;
+
+  --shadow-card: 0 2px 4px rgb(0 0 0 / 0.02), 0 12px 20px rgb(0 0 0 / 0.03);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+@custom-variant dark (&:where(.dark, .dark *));
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Sheen — the primary CTA and the logo tile ONLY.
+   Never on text, icons, nav items or chips. One per screen. */
+:root { --accent-grad: linear-gradient(145deg, var(--red-500) 0%, var(--red-600) 100%); }
+
+/* ══ Base layer ══ Styles unclassed semantic HTML. Do not re-declare these
+     on elements — see STYLING.md §1. ══ */
+
+@layer base {
+  body        { @apply bg-subtle text-fg font-sans antialiased; }
+
+  h1          { @apply text-[30px] font-semibold tracking-[-0.8px] leading-[1.28]; }
+  h2          { @apply text-xl  font-semibold tracking-[-0.3px] leading-[1.24]; }
+  h3          { @apply text-lg  font-semibold tracking-[-0.3px]; }
+  h4          { @apply text-base font-semibold tracking-[-0.2px]; }
+  p           { @apply text-base leading-[1.55] text-fg-muted text-pretty; }
+  small       { @apply text-xs text-fg-subtle; }
+  strong      { @apply font-semibold text-fg; }
+  a           { @apply text-accent hover:text-accent-fg; }
+  hr          { @apply border-0 border-t border-line my-6; }
+  code        { @apply font-mono text-[13px] px-[5px] py-px rounded-[5px] bg-muted; }
+  pre         { @apply font-mono text-xs leading-[19px] p-4 rounded-lg
+                       bg-subtle border border-line overflow-x-auto; }
+  pre code    { @apply bg-transparent p-0; }
+
+  ul, ol      { @apply pl-5 flex flex-col gap-2 text-base text-fg-muted; }
+  li          { @apply leading-[1.55]; }
+
+  label       { @apply text-base font-semibold tracking-[-0.15px] text-fg; }
+  input, textarea, select {
+                @apply w-full box-border rounded-xl border border-line bg-base
+                       px-4 text-base text-fg placeholder:text-fg-subtle
+                       outline-none focus:border-accent; }
+  input, select { @apply h-14; }
+  textarea    { @apply py-4 min-h-[160px] resize-y leading-[1.5]; }
+
+  button      { @apply cursor-pointer; }
+  table       { @apply w-full border-collapse text-base; }
+  th          { @apply text-left font-semibold text-fg py-3 border-b border-line; }
+  td          { @apply py-3 border-b border-line text-fg-muted; }
+
+  *:focus-visible { @apply outline-2 outline-offset-2 outline-accent; }
 }

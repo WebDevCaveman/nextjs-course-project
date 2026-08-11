@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="150" height="34" viewBox="0 0 150 34" fill="none">
+  <rect width="34" height="34" rx="10" fill="#EF4444"></rect>
+  <g transform="translate(7.5 7.5)">
+    <path d="M14 4L4 14L14 24L14 4Z" fill="#fff" transform="scale(0.594)"></path>
+    <path d="M18 8L28 18L18 28L18 8Z" fill="#fff" fill-opacity="0.55" transform="scale(0.594)"></path>
+  </g>
+  <text x="45" y="23" font-family="Switzer, Inter, system-ui, sans-serif" font-size="20" font-weight="600" letter-spacing="-0.5" fill="#0F172A">Dev</text>
+  <text x="83" y="23" font-family="Switzer, Inter, system-ui, sans-serif" font-size="20" font-weight="600" letter-spacing="-0.5" fill="#EF4444">Flow</text>
+</svg>

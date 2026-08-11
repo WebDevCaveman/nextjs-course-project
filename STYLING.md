@@ -1,0 +1,117 @@
+# STYLING.md — the styling contract
+
+Read this before styling any markup. Two parts: a base layer that styles unclassed
+HTML for free, and a recognition table mapping markup shape → one recipe.
+
+The point of the table is that the same block gets the same classes every time, in
+every file, no matter who asks or when. That is what makes the later extraction to
+React components a move rather than a rewrite.
+
+---
+
+## 1 · Base layer — already in `globals.css`
+
+Bare semantic HTML is on-system before you touch it:
+
+    body        bg-subtle text-fg font-sans antialiased
+    h1          text-[30px] font-semibold tracking-[-0.8px] leading-[1.28]
+    h2          text-xl  font-semibold tracking-[-0.3px] leading-[1.24]
+    h3          text-lg  font-semibold tracking-[-0.3px]
+    h4          text-base font-semibold tracking-[-0.2px]
+    p           text-base leading-[1.55] text-fg-muted text-pretty
+    small       text-xs text-fg-subtle
+    strong      font-semibold text-fg
+    a           text-accent hover:text-accent-fg
+    hr          border-0 border-t border-line my-6
+    code        font-mono text-[13px] px-[5px] py-px rounded-[5px] bg-muted
+    pre         font-mono text-xs p-4 rounded-lg bg-subtle border border-line
+    ul, ol      pl-5 flex flex-col gap-2 text-base text-fg-muted
+    label       text-base font-semibold tracking-[-0.15px] text-fg
+    input,      w-full box-border h-14 rounded-xl border border-line bg-base px-4
+    select      text-base placeholder:text-fg-subtle outline-none focus:border-accent
+    textarea    same + py-4 min-h-[160px] resize-y
+    table/th/td full width, border-b border-line, th left+semibold
+
+**Do not re-declare any of these.** `<h2 class="text-xl">` is a bug, not a refinement.
+
+---
+
+## 2 · Recognition table
+
+| Markup shape | Recipe | Note |
+|---|---|---|
+| **Page wrapper**<br>`main` | `flex-1 min-w-0 flex flex-col gap-10 px-[30px] py-10 max-w-[1100px] mx-auto` | Left nav and right panel are siblings of `main`, not children. |
+| **Screen heading row**<br>`h1` + optional `button` | `flex flex-wrap items-center justify-between gap-4` | The `h1` needs no class. |
+| **Primary action**<br>`button`, first / only | `h-[45px] px-[18px] inline-flex items-center gap-2 rounded-xl bg-[image:var(--accent-grad)] text-white text-base font-semibold tracking-[-0.1px] shadow-[0_6px_16px_color-mix(in_srgb,var(--color-accent)_26%,transparent)]` | The gradient is **one per screen**. Secondary: `border border-line-strong bg-base text-fg`. Ghost: `bg-transparent text-fg-muted`. Both flat. |
+| **Filter row**<br>`nav > button` ×3–5 | row `flex flex-wrap gap-3`<br>chip `h-[42px] px-4 rounded-lg bg-muted text-[13px] font-medium text-fg-muted`<br>active `bg-accent-soft text-accent font-semibold` | No border on chips — the fill carries them. |
+| **Search field**<br>`input[type=search]` | wrap `flex items-center gap-3 h-14 px-[18px] rounded-xl bg-base border border-line`<br>icon 20px `text-fg-subtle`<br>input `flex-1 border-0 bg-transparent h-auto px-0` | Reset the base input height inside a wrapper or it double-counts. |
+| **Card, any kind**<br>`article` / `section` in a list | `rounded-xl border border-line bg-base p-9 shadow-card hover:border-accent` | `p-9` = 36px, mobile `p-5`. `shadow-card` = 0 2px 4px / 0 12px 20px at 2–3% black. |
+| **Tag list**<br>`ul` of short words | ul `flex flex-wrap gap-2 pl-0 list-none`<br>li `h-[29px] px-4 inline-flex items-center rounded-md bg-muted text-[10px] font-semibold uppercase tracking-[0.04em] text-fg-subtle` | Kill the base `ul` padding and markers explicitly. |
+| **Card footer meta**<br>`footer` with `img` + spans | footer `flex flex-wrap items-center justify-between gap-4`<br>author `flex items-center gap-1.5`, img `size-5 rounded-full object-cover`, name `text-base font-medium`<br>meta `flex items-center gap-4 text-sm text-fg-subtle`, each `flex items-center gap-1.5` | Votes / Answers / Views, always that order, always icon-first. |
+| **Field group**<br>`label` + `input` + `small` | `flex flex-col gap-2.5`<br>required marker `<span class="text-accent">*</span>` inside the label | Base layer styles all three children — only the wrapper gets a class. |
+| **Stat / count strip**<br>`dl` or number+word pairs | `grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3`<br>cell `flex flex-col gap-1.5 p-4 rounded-xl border border-line`<br>number `text-2xl font-semibold tabular-nums`, label `text-sm text-fg-subtle` | |
+| **Empty / error block**<br>`section` with img + h2 + p + button | `flex flex-col items-center gap-6 py-20 text-center`<br>illustration `max-w-[270px]`, `h2` `text-2xl`, `p` `max-w-[46ch]`, button primary recipe | Centre-aligned only here; everywhere else text is left. |
+| **Anything else** | **STOP — ask instead of improvising.** | An invented recipe is what breaks the system. A question costs one message. |
+
+---
+
+## 3 · Worked example
+
+**In** — what the author writes:
+
+    <article>
+      <h2>Is there a Math function to calculate the root?</h2>
+      <ul><li>javascript</li><li>react.js</li></ul>
+      <footer>
+        <img src="/av.png" alt="Marcus"><span>Marcus Webb</span><span>asked 2 mins ago</span>
+        <span>1.2k Votes</span><span>900 Answers</span><span>5.2k Views</span>
+      </footer>
+    </article>
+
+**Out** — what comes back:
+
+    <article class="flex flex-col gap-6 rounded-xl border border-line bg-base p-9
+                    shadow-card hover:border-accent">
+      <h2>…</h2>                             <!-- base layer, untouched -->
+      <ul class="flex flex-wrap gap-2 pl-0 list-none">
+        <li class="h-[29px] px-4 inline-flex items-center rounded-md bg-muted
+                   text-[10px] font-semibold uppercase tracking-[0.04em]
+                   text-fg-subtle">…</li>
+      </ul>
+      <footer class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-1.5">…author…</div>
+        <div class="flex items-center gap-4 text-sm text-fg-subtle">…meta…</div>
+      </footer>
+    </article>
+
+Three blocks matched three rows. The `h2` was left alone because the base layer had
+already handled it. Nothing was styled twice.
+
+---
+
+## 4 · Hard rules
+
+1. No hex, no `rgb()`, no arbitrary colour. Every colour through a theme token.
+2. No new CSS file, no `style` attribute. Classes only.
+3. Never restyle what the base layer covers.
+4. Keep the author's markup shape — add classes and wrappers, don't rewrite.
+5. Both themes must work. Check `.dark` before finishing.
+6. No match → ask. Then add the new row to this file **before** using it.
+
+---
+
+## 5 · The prompt to use
+
+    Style app/<file>.html against the DevFlow system.
+
+    Read STYLING.md first. Apply the recognition table — if a block matches a row,
+    use that row's recipe verbatim. Do not invent values.
+
+    Constraints:
+      · classes only, no new CSS file, no inline style attributes
+      · every colour through a theme token — no hex, no arbitrary rgb()
+      · do not restyle anything the @layer base rules already cover
+      · both themes must work: check the .dark class before you finish
+      · if a block matches no row, say so and ask — do not improvise
+
+    Report which rows you used and anything you had to ask about.
