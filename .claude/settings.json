@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "i=$(cat); [ \"$(printf %s \"$i\" | jq -r '.stop_hook_active // false')\" = true ] && exit 0; c=$(git status --porcelain 2>/dev/null); [ -z \"$c\" ] && exit 0; printf %s \"$c\" | jq -Rs '{decision:\"block\",reason:(\"ZASADA ZAKRESU: przejrzyj poniższe zmiany. Każda musi wynikać wprost z polecenia użytkownika. Cofnij to, o co nie prosił (git checkout -- <plik> dla zmodyfikowanych, usuń nowe pliki), a na dodatkowe działania poproś o zgodę zamiast je wykonywać. Zmiany:\\n\" + .)}'",
+            "statusMessage": "Sprawdzam zakres zmian"
+          }
+        ]
+      }
+    ]
+  }
+}
