@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import ReactDOM from "react-dom";
 import "./globals.css";
 import ThemeProvider from "@/context/Theme";
+import Navbar from "@/components/navigation/navbar";
 
 export const metadata: Metadata = {
   title: "DevFlow",
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className="h-full antialiased" suppressHydrationWarning>
       <body className="flex min-h-full flex-col">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <Navbar />
           {children}
         </ThemeProvider>
       </body>
