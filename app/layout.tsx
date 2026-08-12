@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import ReactDOM from "react-dom";
 import "./globals.css";
 import ThemeProvider from "@/context/Theme";
+import { Toaster } from "@/components/ui/sonner";
+import { SessionProvider } from "next-auth/react";
+import { auth } from "@/auth";
 
 export const metadata: Metadata = {
   title: "DevFlow",
@@ -19,24 +22,27 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
-  // Switzer only — it renders all UI text, so it sits on the critical path.
-  // Inter is the non-Latin fallback and devicon is per-page; preloading either
-  // would cost bytes most visits never use.
+const RootLayout = async ({ children }: { children: React.ReactNode }) => {
   ReactDOM.preload("/fonts/Switzer-Variable.woff2", {
     as: "font",
     type: "font/woff2",
     crossOrigin: "anonymous",
   });
 
+  const session = await auth();
+
   // Bez suppressHydrationWarning bedziemy otrzymywac warningi w konsoli przegladarki, poniewaz Next.js renderuje strone po stronie serwera, a nastepnie po stronie klienta. W tym przypadku, gdy uzytkownik zmieni tryb z jasnego na ciemny lub odwrotnie, Next.js nie bedzie w stanie zsynchronizowac stanu motywu miedzy serwerem a klientem, co moze prowadzic do roznych wynikow renderowania. Aby temu zapobiec, dodajemy suppressHydrationWarning do tagu html.
   return (
     <html lang="en" className="h-full antialiased" suppressHydrationWarning>
-      <body className="flex min-h-full flex-col">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          {children}
-        </ThemeProvider>
-      </body>
+      <SessionProvider session={session}>
+        <body className="flex min-h-full flex-col">
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+            {children}
+            <Toaster richColors />
+          </ThemeProvider>
+        </body>
+      </SessionProvider>
     </html>
   );
-}
+};
+export default RootLayout;
