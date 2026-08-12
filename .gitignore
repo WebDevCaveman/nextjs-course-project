@@ -42,6 +42,9 @@ yarn-error.log*
 # VS Code
 .vscode/*
 
+Codex
+.codex/*
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

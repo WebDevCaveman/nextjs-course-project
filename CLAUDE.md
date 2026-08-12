@@ -2,14 +2,14 @@
 
 # DevFlow — project rules
 
-Next.js (App Router) + Tailwind v4. A Q&A platform for developers: ask, answer,
-vote, collect, browse jobs.
+Next.js (App Router) + Tailwind v4 + shadcn/ui. A Q&A platform for developers: ask,
+answer, vote, collect, browse jobs.
 
 ## How this project is built
 
 The author writes plain semantic HTML first. Styling is a **separate, later** pass,
 and it follows `STYLING.md` — not your own judgement about what looks good.
-Component extraction is a third pass, after that.
+Component extraction is a third pass, after that, and it lands in shadcn components.
 
 When asked to style markup:
 
@@ -18,14 +18,32 @@ When asked to style markup:
 3. If a block matches no row: **say so and ask.** Do not improvise a recipe.
 4. Report back which rows you used, and anything you had to ask about.
 
+When asked to extract a component:
+
+1. Read `COMPONENTS.md`. Check the shadcn column first — `Button`, `Input`, `Badge`,
+   `Textarea`, `Select`, `Avatar`, `Tabs`, `DropdownMenu`, `Dialog`, `Sheet`, `Tooltip`,
+   `Separator`, `Skeleton` are shadcn primitives with variant props already wired to
+   our tokens — never rebuild what shadcn already gives you.
+2. `QuestionCard`, `TagCard`, `UserCard`, `JobCard`, `Tag`, `VoteControl`, `AppShell`,
+   `RichTextEditor` have no shadcn equivalent — build them as local components in
+   `components/devflow/`, composed from shadcn primitives where they overlap
+   (e.g. `JobCard`'s apply button IS `<Button variant="soft" size="sm">`).
+3. Never introduce a new variant. If a shadcn variant doesn't exist yet for what
+   you need, add it to the component's own variants object — do not inline override
+   classes at the call site.
+
 ## Hard constraints
 
-- **Tokens only.** Every colour through a `--color-*` theme token. No hex, no `rgb()`,
+- **Tokens only.** Every colour through a shadcn CSS variable (`--primary`,
+  `--background`, `--muted`…) or a `--color-*` theme alias. No hex, no `rgb()`,
   no `bg-red-500`. Violating this silently breaks dark mode.
+- **shadcn components are not restyled.** Don't add `className` overrides that fight
+  a shadcn component's own variants — add the variant.
 - **Classes only.** No new CSS file. No `style` attribute. The one exception is the
   `@layer base` block already in `globals.css`.
 - **Never restyle what the base layer covers.** Adding `text-xl` to an `h2` is a bug.
-  Bare `h1`–`h4`, `p`, `label`, `input`, `ul`, `table`, `a`, `code` are already correct.
+  Bare `h1`–`h4`, `p`, `label`, `a`, `code` are already correct. `input`/`textarea`/
+  `select` are shadcn components now, not bare tags — see STYLING.md.
 - **Keep the author's markup shape.** Add classes and grouping wrappers. Do not
   rewrite semantic HTML into divs, and do not reorder content.
 - **Both themes.** Check the `.dark` class on `<html>` before you call it done.
@@ -37,20 +55,42 @@ When asked to style markup:
 Switzer (UI) and Inter (fallback), both self-hosted from `/public/fonts`. Never add a
 `<link>` to fontshare or Google Fonts — no external font requests in this project.
 
+## Type scale — why shadcn components render at OUR sizes, not their own
+
+`--text-sm`/`--text-base`/etc. are redefined in `globals.css`'s `@theme inline` block
+(12.5px / 14px, not Tailwind's stock 14px / 16px). Because shadcn components are
+copied into this repo as plain source (`components/ui/*.tsx`), Tailwind compiles
+their `text-sm`/`text-base` classes against OUR redefined values — same as any other
+file in the project. There is nothing to patch for this: a shadcn component that
+writes `text-sm` in its source already renders at 12.5px here, automatically. Don't
+"fix" a shadcn component's type size unless a screen shows it genuinely wrong —
+that's a sign of a font-weight/line-height issue, not the scale.
+
 ## Icons
 
-- **UI icons** — `@phosphor-icons/react`, regular weight. The design library is
-  Phosphor-named, so names map 1:1 (`House`, `Star`, `SuitcaseSimple`, `ArrowFatUp`).
-- **Technology logos** — `devicon` (`devicon-<name>-plain colored`). Original brand
-  colours, never recoloured to the accent.
-- Never draw an icon as inline SVG paths when one of those two covers it.
+- **UI icons** — `lucide-react`, shadcn's default icon set, stroke width 2.
+  See `ICONS.md` for the Phosphor→Lucide name map and the short list of icons with
+  no direct Lucide equivalent (vote arrows) — those use `components/devflow/icons/`,
+  local SVGs sized and coloured exactly like every other icon.
+- **Technology logos** — `devicon` (`devicon-<name>-plain colored`). Unchanged.
+  Original brand colours, never recoloured to the accent. Not part of the Lucide
+  swap — devicons are for tag/stack logos only, never for UI icons.
+- Never draw a UI icon as inline SVG paths when Lucide covers it.
 
-## Accent
+## Accent — where the red lands
 
-`--color-accent` is red-500. The **Sheen gradient** (`--accent-grad`, red-500 → red-600
-at 145°) is reserved for exactly two things: the single highest-priority button on a
-screen, and the logo tile. Everything else accented stays flat — nav, chips, badges,
-text, icons. If two gradients appear on one screen, one of them is wrong.
+shadcn's own `--accent` variable is a **neutral hover surface** (dropdown/select/menu
+item hover) — a naming collision with nothing to do with brand colour. It maps to
+`--bg-tertiary`, grey, never red. The brand red lives in `--color-primary` (shadcn
+contract — Button `default`, focus rings) and `--color-accent-solid` (our own
+utilities — links, `text-accent-solid`). Both resolve to `--red-500`; neither is
+`--accent`. See `COMPONENTS.md` §0 for the full shape→component→variant mapping.
+
+The **Sheen gradient** (`--accent-grad`, red-500 → red-600 at 145°) is reserved for
+exactly two things: the single highest-priority button on a screen
+(`Button variant="cta"`), and the logo tile. Everything else accented stays flat —
+nav, chips, badges, text, icons, and definitely shadcn's neutral `--accent` hovers.
+If two gradients appear on one screen, one of them is wrong.
 
 ## Layout
 

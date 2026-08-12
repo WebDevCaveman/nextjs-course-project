@@ -1,11 +1,13 @@
 # STYLING.md — the styling contract
 
 Read this before styling any markup. Two parts: a base layer that styles unclassed
-HTML for free, and a recognition table mapping markup shape → one recipe.
+HTML for free, and a recognition table mapping markup shape → one recipe or shadcn
+component.
 
-The point of the table is that the same block gets the same classes every time, in
-every file, no matter who asks or when. That is what makes the later extraction to
-React components a move rather than a rewrite.
+The point of the table is that the same block gets the same classes — or the same
+shadcn component + variant — every time, in every file, no matter who asks or when.
+That is what makes the later extraction to React components a move rather than a
+rewrite.
 
 ---
 
@@ -21,37 +23,46 @@ Bare semantic HTML is on-system before you touch it:
     p           text-base leading-[1.55] text-fg-muted text-pretty
     small       text-xs text-fg-subtle
     strong      font-semibold text-fg
-    a           text-accent hover:text-accent-fg
+    a           text-accent-solid hover:text-accent-fg
     hr          border-0 border-t border-line my-6
     code        font-mono text-[13px] px-[5px] py-px rounded-[5px] bg-muted
     pre         font-mono text-xs p-4 rounded-lg bg-subtle border border-line
     ul, ol      pl-5 flex flex-col gap-2 text-base text-fg-muted
     label       text-base font-semibold tracking-[-0.15px] text-fg
-    input,      w-full box-border h-14 rounded-xl border border-line bg-base px-4
-    select      text-base placeholder:text-fg-subtle outline-none focus:border-accent
-    textarea    same + py-4 min-h-[160px] resize-y
     table/th/td full width, border-b border-line, th left+semibold
 
-**Do not re-declare any of these.** `<h2 class="text-xl">` is a bug, not a refinement.
+**`input`, `textarea`, `select` are NOT bare tags anymore — they are shadcn
+`<Input>`/`<Textarea>`/`<Select>`.** If the author's HTML still has a bare `<input>`,
+convert it to the shadcn component during this pass — that conversion is expected
+and is not "improvising a recipe".
+
+**Do not re-declare any base-layer rule.** `<h2 class="text-xl">` is a bug, not a
+refinement.
 
 ---
 
 ## 2 · Recognition table
 
-| Markup shape | Recipe | Note |
-|---|---|---|
-| **Page wrapper**<br>`main` | `flex-1 min-w-0 flex flex-col gap-10 px-[30px] py-10 max-w-[1100px] mx-auto` | Left nav and right panel are siblings of `main`, not children. |
-| **Screen heading row**<br>`h1` + optional `button` | `flex flex-wrap items-center justify-between gap-4` | The `h1` needs no class. |
-| **Primary action**<br>`button`, first / only | `h-[45px] px-[18px] inline-flex items-center gap-2 rounded-xl bg-[image:var(--accent-grad)] text-white text-base font-semibold tracking-[-0.1px] shadow-[0_6px_16px_color-mix(in_srgb,var(--color-accent)_26%,transparent)]` | The gradient is **one per screen**. Secondary: `border border-line-strong bg-base text-fg`. Ghost: `bg-transparent text-fg-muted`. Both flat. |
-| **Filter row**<br>`nav > button` ×3–5 | row `flex flex-wrap gap-3`<br>chip `h-[42px] px-4 rounded-lg bg-muted text-[13px] font-medium text-fg-muted`<br>active `bg-accent-soft text-accent font-semibold` | No border on chips — the fill carries them. |
-| **Search field**<br>`input[type=search]` | wrap `flex items-center gap-3 h-14 px-[18px] rounded-xl bg-base border border-line`<br>icon 20px `text-fg-subtle`<br>input `flex-1 border-0 bg-transparent h-auto px-0` | Reset the base input height inside a wrapper or it double-counts. |
-| **Card, any kind**<br>`article` / `section` in a list | `rounded-xl border border-line bg-base p-9 shadow-card hover:border-accent` | `p-9` = 36px, mobile `p-5`. `shadow-card` = 0 2px 4px / 0 12px 20px at 2–3% black. |
-| **Tag list**<br>`ul` of short words | ul `flex flex-wrap gap-2 pl-0 list-none`<br>li `h-[29px] px-4 inline-flex items-center rounded-md bg-muted text-[10px] font-semibold uppercase tracking-[0.04em] text-fg-subtle` | Kill the base `ul` padding and markers explicitly. |
-| **Card footer meta**<br>`footer` with `img` + spans | footer `flex flex-wrap items-center justify-between gap-4`<br>author `flex items-center gap-1.5`, img `size-5 rounded-full object-cover`, name `text-base font-medium`<br>meta `flex items-center gap-4 text-sm text-fg-subtle`, each `flex items-center gap-1.5` | Votes / Answers / Views, always that order, always icon-first. |
-| **Field group**<br>`label` + `input` + `small` | `flex flex-col gap-2.5`<br>required marker `<span class="text-accent">*</span>` inside the label | Base layer styles all three children — only the wrapper gets a class. |
-| **Stat / count strip**<br>`dl` or number+word pairs | `grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3`<br>cell `flex flex-col gap-1.5 p-4 rounded-xl border border-line`<br>number `text-2xl font-semibold tabular-nums`, label `text-sm text-fg-subtle` | |
-| **Empty / error block**<br>`section` with img + h2 + p + button | `flex flex-col items-center gap-6 py-20 text-center`<br>illustration `max-w-[270px]`, `h2` `text-2xl`, `p` `max-w-[46ch]`, button primary recipe | Centre-aligned only here; everywhere else text is left. |
-| **Anything else** | **STOP — ask instead of improvising.** | An invented recipe is what breaks the system. A question costs one message. |
+**Column 2 names a shadcn component where one applies.** Use it, with the variant
+given — never a bare tag with classes when a row names a component. §0 in
+`COMPONENTS.md` is this same mapping, kept in sync; if you add a row here, add it
+there too.
+
+| Markup shape                                                    | Recipe                                                                                                                                                                                                                                                                   | Note                                                                                                          |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| **Page wrapper**<br>`main`                                      | `flex-1 min-w-0 flex flex-col gap-10 px-[30px] py-10 max-w-[1100px] mx-auto`                                                                                                                                                                                             | Left nav and right panel are siblings of `main`, not children.                                                |
+| **Screen heading row**<br>`h1` + optional `button`              | `flex flex-wrap items-center justify-between gap-4`                                                                                                                                                                                                                      | The `h1` needs no class. Button is shadcn `<Button>` — see row below.                                         |
+| **Primary action**<br>`button`, first / only                    | shadcn `<Button variant="cta">` if it's the single highest-priority action on the screen; `<Button variant="outline">` for secondary; `<Button variant="ghost">` for tertiary. Never a bare `<button>` with classes.                                                     | The gradient (`cta`) is **one per screen**.                                                                   |
+| **Filter row**<br>`nav > button` ×3–5                           | row `flex flex-wrap gap-3`<br>chip `h-[42px] px-4 rounded-lg bg-muted text-[13px] font-medium text-fg-muted`<br>active `bg-accent-soft text-accent-solid font-semibold`                                                                                                  | No shadcn toggle-chip primitive — stays a local `<button>`. No border on chips, the fill carries them.        |
+| **Search field**<br>`input[type=search]`                        | shadcn `<Input>` with an `unstyled` variant inside a wrapper: `flex items-center gap-3 h-14 px-[18px] rounded-xl bg-base border border-line focus-within:border-accent-solid`, Lucide `Search` 20px `text-fg-subtle`, `<Input variant="unstyled" className="flex-1" />`  | Reset the Input's own border/ring/height inside the wrapper, or it double-counts.                             |
+| **Card, any kind**<br>`article` / `section` in a list           | `rounded-xl border border-line bg-base p-9 shadow-card hover:border-accent-solid`                                                                                                                                                                                        | `p-9` = 36px, mobile `p-5`. `shadow-card` = 0 2px 4px / 0 12px 20px at 2–3% black.                            |
+| **Tag list**<br>`ul` of short words                             | ul `flex flex-wrap gap-2 pl-0 list-none`<br>li `h-[29px] px-4 inline-flex items-center rounded-md bg-muted text-[10px] font-semibold uppercase tracking-[0.04em] text-fg-subtle`                                                                                         | Local `Tag` component, not shadcn `Badge` — kill the base `ul` padding and markers explicitly.                |
+| **Status label**<br>single word, coloured, pill-shaped          | shadcn `<Badge variant="success"\|"warning"\|"info"\|"danger"\|"accent"\|"neutral">`                                                                                                                                                                                     | Pills mean status. If it names a topic instead, it's a Tag, not a Badge.                                      |
+| **Card footer meta**<br>`footer` with `img` + spans             | footer `flex flex-wrap items-center justify-between gap-4`<br>author `flex items-center gap-1.5`, avatar shadcn `<Avatar>` size-5, name `text-base font-medium`<br>meta `flex items-center gap-4 text-sm text-fg-subtle`, each `flex items-center gap-1.5` + Lucide icon | Votes / Answers / Views, always that order, always icon-first.                                                |
+| **Field group**<br>`label` + `input` + `small`                  | `flex flex-col gap-2.5`<br>required marker `<span class="text-accent-solid">*</span>` inside the label                                                                                                                                                                   | `<label>` is base layer; `input` is shadcn `<Input>`; `<small>` is base layer. Only the wrapper gets a class. |
+| **Stat / count strip**<br>`dl` or number+word pairs             | `grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3`<br>cell `flex flex-col gap-1.5 p-4 rounded-xl border border-line`<br>number `text-2xl font-semibold tabular-nums`, label `text-sm text-fg-subtle`                                                            |                                                                                                               |
+| **Empty / error block**<br>`section` with img + h2 + p + button | `flex flex-col items-center gap-6 py-20 text-center`<br>illustration `max-w-[270px]`, `h2` `text-2xl`, `p` `max-w-[46ch]`, button `<Button variant="cta">`                                                                                                               | Centre-aligned only here; everywhere else text is left.                                                       |
+| **Anything else**                                               | **STOP — ask instead of improvising.**                                                                                                                                                                                                                                   | An invented recipe is what breaks the system. A question costs one message.                                   |
 
 ---
 
@@ -71,7 +82,7 @@ Bare semantic HTML is on-system before you touch it:
 **Out** — what comes back:
 
     <article class="flex flex-col gap-6 rounded-xl border border-line bg-base p-9
-                    shadow-card hover:border-accent">
+                    shadow-card hover:border-accent-solid">
       <h2>…</h2>                             <!-- base layer, untouched -->
       <ul class="flex flex-wrap gap-2 pl-0 list-none">
         <li class="h-[29px] px-4 inline-flex items-center rounded-md bg-muted
@@ -79,8 +90,8 @@ Bare semantic HTML is on-system before you touch it:
                    text-fg-subtle">…</li>
       </ul>
       <footer class="flex flex-wrap items-center justify-between gap-4">
-        <div class="flex items-center gap-1.5">…author…</div>
-        <div class="flex items-center gap-4 text-sm text-fg-subtle">…meta…</div>
+        <div class="flex items-center gap-1.5">…author, Avatar…</div>
+        <div class="flex items-center gap-4 text-sm text-fg-subtle">…meta, Lucide icons…</div>
       </footer>
     </article>
 
@@ -105,10 +116,12 @@ already handled it. Nothing was styled twice.
     Style app/<file>.html against the DevFlow system.
 
     Read STYLING.md first. Apply the recognition table — if a block matches a row,
-    use that row's recipe verbatim. Do not invent values.
+    use that row's recipe verbatim, and use the shadcn component it names (Button,
+    Input, Badge, Avatar…) instead of a bare tag with classes. Do not invent values.
 
     Constraints:
-      · classes only, no new CSS file, no inline style attributes
+      · shadcn primitives for anything the table maps to one — don't hand-roll it
+      · classes only otherwise, no new CSS file, no inline style attributes
       · every colour through a theme token — no hex, no arbitrary rgb()
       · do not restyle anything the @layer base rules already cover
       · both themes must work: check the .dark class before you finish
