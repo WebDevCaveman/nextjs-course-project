@@ -89,6 +89,25 @@ Call sites: `<Button variant="cta">`, `<Button variant="soft" size="sm">`. Never
 
 ---
 
+## Auth card · Confirmation card · OAuth row · Dark card — local, no shadcn equivalent
+
+Full recipes moved to `STYLING.md` §3 — read there before building. Summary of the
+component boundary:
+
+    components/devflow/auth/auth-card.tsx      Sign in, Sign up, Forgot password,
+                                                Set new password, Check your email,
+                                                Account exists — same shell, fields
+                                                and social row optional per screen.
+                                                ("confirmation card" in SCREENS.md is
+                                                this same component with no fields.)
+    components/devflow/auth/auth-field.tsx     h-12 field, NOT shadcn Input — see
+                                                the height note in STYLING.md §3.
+    components/devflow/auth/oauth-row.tsx      divider + GitHub/Google buttons
+    components/devflow/auth/welcome-card.tsx   Welcome only — dark, fixed colours,
+                                                circular provider icons, own layout
+
+---
+
 ## Tag — local, no shadcn equivalent (`components/devflow/tag.tsx`)
 
 Square-ish, never a pill. Pills mean status; tags mean topic. Devicon goes inside a

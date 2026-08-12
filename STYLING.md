@@ -48,22 +48,79 @@ given — never a bare tag with classes when a row names a component. §0 in
 `COMPONENTS.md` is this same mapping, kept in sync; if you add a row here, add it
 there too.
 
-| Markup shape                                                    | Recipe                                                                                                                                                                                                                                                                   | Note                                                                                                          |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| **Page wrapper**<br>`main`                                      | `flex-1 min-w-0 flex flex-col gap-10 px-[30px] py-10 max-w-[1100px] mx-auto`                                                                                                                                                                                             | Left nav and right panel are siblings of `main`, not children.                                                |
-| **Screen heading row**<br>`h1` + optional `button`              | `flex flex-wrap items-center justify-between gap-4`                                                                                                                                                                                                                      | The `h1` needs no class. Button is shadcn `<Button>` — see row below.                                         |
-| **Primary action**<br>`button`, first / only                    | shadcn `<Button variant="cta">` if it's the single highest-priority action on the screen; `<Button variant="outline">` for secondary; `<Button variant="ghost">` for tertiary. Never a bare `<button>` with classes.                                                     | The gradient (`cta`) is **one per screen**.                                                                   |
-| **Filter row**<br>`nav > button` ×3–5                           | row `flex flex-wrap gap-3`<br>chip `h-[42px] px-4 rounded-lg bg-muted text-[13px] font-medium text-fg-muted`<br>active `bg-accent-soft text-accent-solid font-semibold`                                                                                                  | No shadcn toggle-chip primitive — stays a local `<button>`. No border on chips, the fill carries them.        |
-| **Search field**<br>`input[type=search]`                        | shadcn `<Input>` with an `unstyled` variant inside a wrapper: `flex items-center gap-3 h-14 px-[18px] rounded-xl bg-base border border-line focus-within:border-accent-solid`, Lucide `Search` 20px `text-fg-subtle`, `<Input variant="unstyled" className="flex-1" />`  | Reset the Input's own border/ring/height inside the wrapper, or it double-counts.                             |
-| **Card, any kind**<br>`article` / `section` in a list           | `rounded-xl border border-line bg-base p-9 shadow-card hover:border-accent-solid`                                                                                                                                                                                        | `p-9` = 36px, mobile `p-5`. `shadow-card` = 0 2px 4px / 0 12px 20px at 2–3% black.                            |
-| **Tag list**<br>`ul` of short words                             | ul `flex flex-wrap gap-2 pl-0 list-none`<br>li `h-[29px] px-4 inline-flex items-center rounded-md bg-muted text-[10px] font-semibold uppercase tracking-[0.04em] text-fg-subtle`                                                                                         | Local `Tag` component, not shadcn `Badge` — kill the base `ul` padding and markers explicitly.                |
-| **Status label**<br>single word, coloured, pill-shaped          | shadcn `<Badge variant="success"\|"warning"\|"info"\|"danger"\|"accent"\|"neutral">`                                                                                                                                                                                     | Pills mean status. If it names a topic instead, it's a Tag, not a Badge.                                      |
-| **Card footer meta**<br>`footer` with `img` + spans             | footer `flex flex-wrap items-center justify-between gap-4`<br>author `flex items-center gap-1.5`, avatar shadcn `<Avatar>` size-5, name `text-base font-medium`<br>meta `flex items-center gap-4 text-sm text-fg-subtle`, each `flex items-center gap-1.5` + Lucide icon | Votes / Answers / Views, always that order, always icon-first.                                                |
-| **Field group**<br>`label` + `input` + `small`                  | `flex flex-col gap-2.5`<br>required marker `<span class="text-accent-solid">*</span>` inside the label                                                                                                                                                                   | `<label>` is base layer; `input` is shadcn `<Input>`; `<small>` is base layer. Only the wrapper gets a class. |
-| **Stat / count strip**<br>`dl` or number+word pairs             | `grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3`<br>cell `flex flex-col gap-1.5 p-4 rounded-xl border border-line`<br>number `text-2xl font-semibold tabular-nums`, label `text-sm text-fg-subtle`                                                            |                                                                                                               |
-| **Empty / error block**<br>`section` with img + h2 + p + button | `flex flex-col items-center gap-6 py-20 text-center`<br>illustration `max-w-[270px]`, `h2` `text-2xl`, `p` `max-w-[46ch]`, button `<Button variant="cta">`                                                                                                               | Centre-aligned only here; everywhere else text is left.                                                       |
-| **Auth shell**<br>`main` wrapping a sign-in / sign-up card      | `min-h-screen bg-[image:var(--auth-grad)]`                                                                                                                                                                                                                               | Dark in both themes — content on top is light-on-dark. Auth screens only, never inside the app shell.         |
-| **Anything else**                                               | **STOP — ask instead of improvising.**                                                                                                                                                                                                                                   | An invented recipe is what breaks the system. A question costs one message.                                   |
+| Markup shape                                                    | Recipe                                                                                                                                                                                                                                                                   | Note                                                                                                                 |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| **Page wrapper**<br>`main`                                      | `flex-1 min-w-0 flex flex-col gap-10 px-[30px] py-10 max-w-[1100px] mx-auto`                                                                                                                                                                                             | Left nav and right panel are siblings of `main`, not children.                                                       |
+| **Screen heading row**<br>`h1` + optional `button`              | `flex flex-wrap items-center justify-between gap-4`                                                                                                                                                                                                                      | The `h1` needs no class. Button is shadcn `<Button>` — see row below.                                                |
+| **Primary action**<br>`button`, first / only                    | shadcn `<Button variant="cta">` if it's the single highest-priority action on the screen; `<Button variant="outline">` for secondary; `<Button variant="ghost">` for tertiary. Never a bare `<button>` with classes.                                                     | The gradient (`cta`) is **one per screen**.                                                                          |
+| **Filter row**<br>`nav > button` ×3–5                           | row `flex flex-wrap gap-3`<br>chip `h-[42px] px-4 rounded-lg bg-muted text-[13px] font-medium text-fg-muted`<br>active `bg-accent-soft text-accent-solid font-semibold`                                                                                                  | No shadcn toggle-chip primitive — stays a local `<button>`. No border on chips, the fill carries them.               |
+| **Search field**<br>`input[type=search]`                        | shadcn `<Input>` with an `unstyled` variant inside a wrapper: `flex items-center gap-3 h-14 px-[18px] rounded-xl bg-base border border-line focus-within:border-accent-solid`, Lucide `Search` 20px `text-fg-subtle`, `<Input variant="unstyled" className="flex-1" />`  | Reset the Input's own border/ring/height inside the wrapper, or it double-counts.                                    |
+| **Card, any kind**<br>`article` / `section` in a list           | `rounded-xl border border-line bg-base p-9 shadow-card hover:border-accent-solid`                                                                                                                                                                                        | `p-9` = 36px, mobile `p-5`. `shadow-card` = 0 2px 4px / 0 12px 20px at 2–3% black.                                   |
+| **Tag list**<br>`ul` of short words                             | ul `flex flex-wrap gap-2 pl-0 list-none`<br>li `h-[29px] px-4 inline-flex items-center rounded-md bg-muted text-[10px] font-semibold uppercase tracking-[0.04em] text-fg-subtle`                                                                                         | Local `Tag` component, not shadcn `Badge` — kill the base `ul` padding and markers explicitly.                       |
+| **Status label**<br>single word, coloured, pill-shaped          | shadcn `<Badge variant="success"\|"warning"\|"info"\|"danger"\|"accent"\|"neutral">`                                                                                                                                                                                     | Pills mean status. If it names a topic instead, it's a Tag, not a Badge.                                             |
+| **Card footer meta**<br>`footer` with `img` + spans             | footer `flex flex-wrap items-center justify-between gap-4`<br>author `flex items-center gap-1.5`, avatar shadcn `<Avatar>` size-5, name `text-base font-medium`<br>meta `flex items-center gap-4 text-sm text-fg-subtle`, each `flex items-center gap-1.5` + Lucide icon | Votes / Answers / Views, always that order, always icon-first.                                                       |
+| **Field group**<br>`label` + `input` + `small`                  | `flex flex-col gap-2.5`<br>required marker `<span class="text-accent-solid">*</span>` inside the label                                                                                                                                                                   | `<label>` is base layer; `input` is shadcn `<Input>`; `<small>` is base layer. Only the wrapper gets a class.        |
+| **Stat / count strip**<br>`dl` or number+word pairs             | `grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3`<br>cell `flex flex-col gap-1.5 p-4 rounded-xl border border-line`<br>number `text-2xl font-semibold tabular-nums`, label `text-sm text-fg-subtle`                                                            |                                                                                                                      |
+| **Empty / error block**<br>`section` with img + h2 + p + button | `flex flex-col items-center gap-6 py-20 text-center`<br>illustration `max-w-[270px]`, `h2` `text-2xl`, `p` `max-w-[46ch]`, button `<Button variant="cta">`                                                                                                               | Centre-aligned only here; everywhere else text is left.                                                              |
+| **Auth shell**<br>`main` wrapping an auth card                  | `min-h-screen bg-[image:var(--auth-grad)]` + `grid place-items-center px-6 py-10`                                                                                                                                                                                        | Our addition, not in the handoff — the backdrop the auth cards in §3 sit on. Dark in both themes. Auth screens only. |
+| **Anything else**                                               | **STOP — ask instead of improvising.**                                                                                                                                                                                                                                   | An invented recipe is what breaks the system. A question costs one message.                                          |
+
+---
+
+## 3 · Auth screens — the missing recipes
+
+Three shapes cover Welcome, Sign in, Sign up, Forgot password, Check your email,
+Set new password, Account exists. None is a shadcn primitive — build as local
+components in `components/devflow/auth/`. Their field height (48px) and input
+radius (8px) are intentionally **not** the same as the rest of the app's shadcn
+`Input` (14px/10px, patched in COMPONENTS.md) — auth screens are their own
+enclosed surface. Do not unify the two; do not patch shadcn `Input` to match this,
+and do not restyle this card's fields to `h-14` to match shadcn.
+
+**`AuthCard`** — the shell for every screen except Welcome:
+
+    card     w-full max-w-[520px] flex flex-col gap-10 p-[40px_32px] rounded-[10px]
+             bg-subtle shadow-[0_29px_59px_rgba(0,0,0,0.16)]
+    header   flex items-start justify-between gap-5
+    title    h1, text-2xl leading-[1.3] tracking-[-0.4px] font-bold
+    subtitle p, text-base leading-[1.4] text-fg-muted
+    mark     size-[50px] rounded-[14px] bg-[image:var(--accent-grad)]
+             flex items-center justify-center — 26px white glyph, centered
+
+**`AuthField`** — local, not shadcn `Input` (see height note above):
+
+    label    text-base font-medium tracking-[-0.2px]
+    input    w-full h-12 px-4 rounded-lg border border-line bg-base text-[15px]
+             outline-none focus:border-accent-solid
+    hint     text-[13px] text-fg-subtle
+
+**Auth primary button** — same Sheen family as `Button variant="cta"`, but at
+`rounded-lg` (8px) inside this card, not the button component's own 11px —
+a deliberate exception scoped to `AuthCard`, not a drift to fix:
+
+    button   h-[45px] rounded-lg bg-[image:var(--accent-grad)] text-white text-base
+             font-semibold shadow-[0_6px_16px_color-mix(in_srgb,var(--red-500)_26%,transparent)]
+             hover:bg-accent-fg
+
+**OAuth row** — divider + two full-width provider buttons, always GitHub then Google:
+
+    divider  flex items-center gap-3.5, "or" in text-[13px] text-fg-subtle,
+             1px bg-line rules on both sides
+    button   flex items-center justify-center gap-2.5 h-[45px] rounded-lg
+             border border-line-strong bg-base text-fg text-[15px] font-medium
+             hover:border-accent-solid
+             icon Lucide-equivalent brand mark, 20px, before the label
+
+**`WelcomeCard`** — Welcome only, the one dark/frosted exception:
+
+    card     w-full max-w-[488px] min-h-[572px] flex flex-col items-center
+             justify-center gap-10 (centered column, not the AuthCard shell)
+    mark     size-11 rounded-[13px] bg-[image:var(--accent-grad)], 24px glyph
+    provider row: flex items-center gap-6, 3× circular icon button
+             size-[67px] rounded-2xl border border-[rgb(63,67,84)] bg-transparent
+             text-white — fixed dark colour, does not follow the theme token
+    footnote text-[13px] text-[rgb(133,142,173)] max-w-[34ch] text-center
+             — also a fixed colour, intentional on this screen only
 
 ---
 
