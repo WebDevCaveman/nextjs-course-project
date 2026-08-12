@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import ReactDOM from "react-dom";
 import "./globals.css";
+import ThemeProvider from "@/context/Theme";
 
 export const metadata: Metadata = {
   title: "DevFlow",
-  description: "Next.js 16 awesomeness with Turborepo, TailwindCSS, and TypeScript",
+  description:
+    "A community-driven platform for asking and answering programming questions. Get help, share knowledge, and collaborate with developers from around the world. Explore topics in web development, mobile app development, algorithms, data structures, and more.",
   manifest: "/brand/site.webmanifest",
   icons: {
     icon: [
@@ -27,9 +29,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     crossOrigin: "anonymous",
   });
 
+  // Bez suppressHydrationWarning bedziemy otrzymywac warningi w konsoli przegladarki, poniewaz Next.js renderuje strone po stronie serwera, a nastepnie po stronie klienta. W tym przypadku, gdy uzytkownik zmieni tryb z jasnego na ciemny lub odwrotnie, Next.js nie bedzie w stanie zsynchronizowac stanu motywu miedzy serwerem a klientem, co moze prowadzic do roznych wynikow renderowania. Aby temu zapobiec, dodajemy suppressHydrationWarning do tagu html.
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className="flex min-h-full flex-col">{children}</body>
+    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
+      <body className="flex min-h-full flex-col">
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   );
 }
