@@ -6,7 +6,7 @@ import Theme from "./Theme";
 
 const Navbar = () => {
   return (
-    <header className="border-line bg-base sticky top-0 z-40 flex h-[80px] items-center justify-between gap-6 border-b px-6">
+    <header className="border-line bg-base sticky top-0 z-40 flex h-20 items-center justify-between gap-6 border-b px-6">
       <Link href="/" className="text-fg hover:text-fg flex items-center gap-2.5">
         <Image src="/brand/logo-tile.svg" alt="DevFlow Logo" width={34} height={34} priority />
         <span className="text-xl font-semibold tracking-[-0.5px]">
@@ -18,7 +18,7 @@ const Navbar = () => {
 
       <div className="flex items-center gap-3">
         <Theme />
-        <Avatar className="size-[34px]">
+        <Avatar className="size-8.5">
           <AvatarFallback>DF</AvatarFallback>
         </Avatar>
       </div>
