@@ -1,7 +1,7 @@
-import { LogIn, Menu, UserPlus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+import { HugeIcon } from "@/components/devflow/icons/huge";
 import NavLinks from "@/components/navigation/NavLinks";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +20,7 @@ const MobileNavigation = () => {
     <Sheet>
       <SheetTrigger asChild className="md:hidden">
         <Button variant="icon" size="icon" aria-label="Open navigation">
-          <Menu />
+          <HugeIcon name="menu/menu-user" size={20} />
         </Button>
       </SheetTrigger>
 
@@ -52,13 +52,13 @@ const MobileNavigation = () => {
         <SheetFooter>
           <Button asChild variant="soft">
             <Link href={ROUTES.SIGN_IN}>
-              <LogIn />
+              <HugeIcon name="interface/login" size={16} />
               Log In
             </Link>
           </Button>
           <Button asChild variant="outline">
             <Link href={ROUTES.SIGN_UP}>
-              <UserPlus />
+              <HugeIcon name="user/user-circle-add" size={16} />
               Sign Up
             </Link>
           </Button>

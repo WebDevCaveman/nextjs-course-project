@@ -2,7 +2,8 @@
 
 import { useTheme } from "next-themes";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
-import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react";
+import { HugeIconSvg } from "@/components/devflow/icons/huge/HugeIconSvg";
+import { uiIcons } from "@/components/devflow/icons/huge/data/ui";
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme();
@@ -12,11 +13,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
       icons={{
-        success: <CircleCheckIcon className="size-4" />,
-        info: <InfoIcon className="size-4" />,
-        warning: <TriangleAlertIcon className="size-4" />,
-        error: <OctagonXIcon className="size-4" />,
-        loading: <Loader2Icon className="size-4 animate-spin" />,
+        success: <HugeIconSvg icon={uiIcons.checkCircle} size={16} className="size-4" />,
+        info: <HugeIconSvg icon={uiIcons.info} size={16} className="size-4" />,
+        warning: <HugeIconSvg icon={uiIcons.warning} size={16} className="size-4" />,
+        error: <HugeIconSvg icon={uiIcons.error} size={16} className="size-4" />,
+        loading: <HugeIconSvg icon={uiIcons.loading} size={16} className="size-4 animate-spin" />,
       }}
       style={
         {

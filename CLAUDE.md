@@ -78,14 +78,21 @@ they are (`--color-subtle`, `--color-muted`), never after a size.
 
 ## Icons
 
-- **UI icons** — `lucide-react`, shadcn's default icon set, stroke width 2.
-  See `ICONS.md` for the Phosphor→Lucide name map and the short list of icons with
-  no direct Lucide equivalent (vote arrows) — those use `components/devflow/icons/`,
-  local SVGs sized and coloured exactly like every other icon.
+- **UI icons** — Huge Icons (outline), 1349 icons vendored in
+  `components/devflow/icons/huge/`. Read `ICONS.md` before using them. Server
+  Components render `<HugeIcon name="category/icon" size={n} />`; `"use client"`
+  components render `<HugeIconSvg icon={uiIcons.x} size={n} />` from
+  `huge/data/ui.ts` — importing a whole `data/<category>` module into the client
+  ships up to 336 KB for one glyph. No `strokeWidth`: these are filled outlines.
+- **Icon names lie.** The hamburger is `menu/menu-user`, `arrows/direction-right`
+  is a chevron pointing _down_. Render a candidate before you commit to it.
 - **Technology logos** — `devicon` (`devicon-<name>-plain colored`). Unchanged.
-  Original brand colours, never recoloured to the accent. Not part of the Lucide
-  swap — devicons are for tag/stack logos only, never for UI icons.
-- Never draw a UI icon as inline SVG paths when Lucide covers it.
+  Original brand colours, never recoloured to the accent. Not part of the icon
+  set — devicons are for tag/stack logos only, never for UI icons.
+- **`lucide-react` is imported nowhere** but stays in `package.json` until the end
+  of the project: a component added by the shadcn CLI arrives with Lucide imports,
+  and those get swapped for this set before it lands.
+- Never draw a UI icon as inline SVG paths — the set covers it.
 
 ## Accent — where the red lands
 

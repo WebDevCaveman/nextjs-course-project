@@ -51,3 +51,4 @@ next-env.d.ts
 
 # design handoff — source package, already installed into the repo
 /_handoff/
+/_icons/

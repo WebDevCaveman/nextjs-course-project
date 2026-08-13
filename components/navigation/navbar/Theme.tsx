@@ -1,7 +1,8 @@
 "use client";
 
-import { Monitor, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
+import { HugeIconSvg } from "@/components/devflow/icons/huge/HugeIconSvg";
+import { uiIcons } from "@/components/devflow/icons/huge/data/ui";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -17,22 +18,22 @@ const Theme = () => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="icon" size="icon" aria-label="Zmień motyw">
-          <Sun className="size-4 dark:hidden" />
-          <Moon className="hidden size-4 dark:block" />
+          <HugeIconSvg icon={uiIcons.sun} size={16} className="size-4 dark:hidden" />
+          <HugeIconSvg icon={uiIcons.moon} size={16} className="hidden size-4 dark:block" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
           <DropdownMenuRadioItem value="light">
-            <Sun />
+            <HugeIconSvg icon={uiIcons.sun} size={16} />
             Light
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="dark">
-            <Moon />
+            <HugeIconSvg icon={uiIcons.moon} size={16} />
             Dark
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="system">
-            <Monitor />
+            <HugeIconSvg icon={uiIcons.monitor} size={16} />
             System
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>

@@ -1,6 +1,4 @@
-import { auth, signOut } from "@/auth";
-import { Button } from "@/components/ui/button";
-import ROUTES from "@/constants/routes";
+import { auth } from "@/auth";
 
 const Home = async () => {
   const session = await auth();
@@ -12,18 +10,6 @@ const Home = async () => {
       ) : (
         <p className="mt-4 text-lg">You are not logged in.</p>
       )}
-
-      <form
-        className="mt-6"
-        action={async () => {
-          "use server";
-          await signOut({ redirectTo: ROUTES.SIGN_IN });
-        }}
-      >
-        <Button variant="outline" type="submit">
-          Logout
-        </Button>
-      </form>
     </div>
   );
 };

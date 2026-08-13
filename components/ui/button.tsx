@@ -22,6 +22,7 @@ const buttonVariants = cva(
         md: "h-[42px] rounded-md px-[22px] text-base",
         sm: "h-[38px] rounded-md px-[15px] text-sm",
         icon: "size-[34px] justify-center rounded-md px-0",
+        rail: "h-[42px] rounded-md px-0 text-base xl:px-[22px]",
       },
     },
     defaultVariants: {

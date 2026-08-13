@@ -23,6 +23,7 @@ same table's other half: which shadcn component, which variant, verbatim, every 
 | Filled brand action (not the hero CTA)          | `Button`             | `variant="primary" size="md"`      | e.g. "Submit answer"                                                                                    |
 | Small inline action (job apply, card action)    | `Button`             | `variant="soft" size="sm"`         |                                                                                                         |
 | Icon-only button                                | `Button`             | `variant="icon" size="icon"`       |                                                                                                         |
+| Action in the collapsed left rail (`md`→`xl`)   | `Button`             | its own variant + `size="rail"`    | Label collapses to the icon below `xl`; `size` is not responsive, so the breakpoint lives in the size.  |
 | Text field                                      | `Input`              | patched default (see §Input below) |                                                                                                         |
 | Multi-line field                                | `Textarea`           | patched default                    |                                                                                                         |
 | Dropdown field                                  | `Select`             | patched trigger                    |                                                                                                         |
@@ -84,6 +85,13 @@ defaults alongside ours, they map to nothing in this design.
     size     md       h-[42px] px-[22px] rounded-md    text-base   (shadcn "default")
     size     sm       h-[38px] px-[15px] rounded-md    text-sm
     size     icon     size-[34px] rounded-md justify-center px-0
+    size     rail     h-[42px] px-0 rounded-md text-base xl:px-[22px]
+                       → the left rail's own size. Between md and xl the rail is 72px
+                         and the button is icon-only, where md's px-[22px] alone
+                         (44px) overflows; at xl the label returns and so does the
+                         padding. `size` is a plain prop, not responsive — that is
+                         why the breakpoint is baked into the size and not written
+                         at the call site. Left rail only.
 
     base (shared across all variants, keep shadcn's own)
              inline-flex items-center gap-2 font-semibold tracking-[-0.1px]
@@ -300,9 +308,64 @@ shadcn `Avatar` (user-card) and `Badge`/`Button` (job-card) — not built from s
     button     size-[30px] rounded-md flex items-center justify-center
                hover:bg-muted text-fg-subtle
     active     text-accent-solid bg-accent-soft
-    icon       VoteUpIcon / VoteDownIcon from components/devflow/icons/vote-arrows.tsx
-               (no Lucide equivalent — see ICONS.md)
+    icon       <HugeIconSvg icon={uiIcons.voteUp / uiIcons.voteDown} size={16} />
+               (client component — the subset, not a data/ category; see ICONS.md)
     count      text-base font-semibold tabular-nums text-fg
+
+---
+
+## Right panel lists — local, no shadcn equivalent
+
+Both live in the right panel (`p-6 flex flex-col gap-9`), each wrapped in a
+`<section className="flex flex-col gap-4">` under a bare `<h3>`.
+
+    Hot Network — 5 linked questions
+
+    list       ul  flex flex-col gap-3.5 pl-0 list-none
+    row        li  flex items-center gap-3.5
+               → centred on the whole text block, not pinned to the first line.
+                 Pinned reads as "too high" on the two-line questions that make up
+                 most of this list.
+    mark       span size-[22px] shrink-0 inline-flex items-center justify-center
+               rounded-[4px] border text-xs font-semibold
+               → NOT rounded-md. `--radius` makes that 10px here, which on a 22px
+                 box reads as a circle.
+               odd  border-accent-solid text-accent-solid
+               even border-info text-info        ← alternating, index % 2
+    question   a   text-base font-medium text-fg hover:text-accent-solid
+
+Popular Tags is not a list recipe of its own — it is `TagList`, below.
+
+`pl-0 list-none` is not optional — the base layer gives every `ul` `pl-5` and
+markers, same as the Tag list recipe.
+
+---
+
+## Tag list — local, no shadcn equivalent (`components/devflow/tag-list.tsx`)
+
+The `md`-chip tag list, in both directions. One component, two props: `tags` and
+`inline`. The uppercase `Tag.sm` row on question/user cards is a different shape —
+see §Tag and the `Tag list` row in `STYLING.md`, not this.
+
+    stacked    ul  flex flex-col gap-3.5 pl-0 list-none
+               → right panel "Popular Tags", profile "Top Tags"
+    inline     ul  flex flex-row flex-wrap gap-2 pl-0 list-none
+               → the same chips wrapped, where a screen needs them on one line
+               → `flex-row` is NOT redundant. The base layer sets
+                 `flex-direction: column` on every `ul`, so `flex-wrap` alone
+                 still stacks. Drop it and the inline variant silently breaks.
+
+    row        li  flex items-center gap-3
+    chip       span inline-flex items-center gap-2 + Tag `md` (§Tag):
+               px-[10px] py-1 rounded-sm bg-muted text-sm font-medium text-fg-muted
+    logo       <i class="devicon-<name>-plain colored text-[20px]" /> inside the chip,
+               before the label — §Tag, "devicon goes inside a tag"
+               → pick a logo with its own colour. A black mark (nextjs, github)
+                 plus `colored` disappears in dark mode — drop `colored` there so
+                 it inherits currentColor.
+    count      span ml-auto text-sm tabular-nums text-fg-subtle
+               → rendered only when the tag carries a `count`. Omit the field to
+                 drop it; `0` still renders.
 
 ---
 
@@ -332,12 +395,12 @@ Neither side column scrolls with the page. Each owns its own scroll.
 
 ## Icons
 
-    UI         lucide-react, stroke width 2 (shadcn default)
-               <Home size={21} /> — see ICONS.md for the Phosphor→Lucide map
-               sizes: 14 meta · 16 button · 20 search · 21 nav
-               no-match gap (vote arrows): components/devflow/icons/vote-arrows.tsx
+    UI         Huge Icons (outline), components/devflow/icons/huge/ — no strokeWidth
+               server: <HugeIcon name="interface/home-01" size={21} />
+               client: <HugeIconSvg icon={uiIcons.home} size={21} />
+               sizes: 14 meta · 16 button · 20 search · 21 nav — see ICONS.md
 
     tech logos devicon — <i class="devicon-react-plain colored" />, unchanged
                original brand colours, never recoloured to the accent
 
-Never hand-write SVG paths for an icon Lucide already covers.
+Never hand-write SVG paths for an icon the set already covers.
