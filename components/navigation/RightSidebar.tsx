@@ -12,14 +12,14 @@ const hotQuestions = [
 ];
 
 const popularTags = [
-  { id: "react", name: "react", icon: "devicon-react-original", count: "18,209" },
-  { id: "javascript", name: "javascript", icon: "devicon-javascript-plain", count: "15,730" },
-  { id: "typescript", name: "typescript", icon: "devicon-typescript-plain", count: "12,486" },
-  { id: "nodejs", name: "nodejs", icon: "devicon-nodejs-plain", count: "9,041" },
-  { id: "python", name: "python", icon: "devicon-python-plain", count: "7,552" },
-  { id: "tailwindcss", name: "tailwindcss", icon: "devicon-tailwindcss-original", count: "5,318" },
-  { id: "docker", name: "docker", icon: "devicon-docker-plain", count: "4,127" },
-  { id: "postgresql", name: "postgresql", icon: "devicon-postgresql-plain", count: "3,864" },
+  { id: "react", name: "react", count: "18,209" },
+  { id: "javascript", name: "javascript", count: "15,730" },
+  { id: "typescript", name: "typescript", count: "12,486" },
+  { id: "nodejs", name: "nodejs", count: "9,041" },
+  { id: "python", name: "python", count: "7,552" },
+  { id: "tailwindcss", name: "tailwindcss", count: "5,318" },
+  { id: "docker", name: "docker", count: "4,127" },
+  { id: "postgresql", name: "postgresql", count: "3,864" },
 ];
 
 const RightSidebar = () => {
