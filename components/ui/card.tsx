@@ -4,7 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const cardVariants = cva(
-  "group/card flex flex-col gap-6 overflow-hidden rounded-xl border border-line bg-base py-(--card-spacing) shadow-card [--card-spacing:20px] sm:[--card-spacing:36px] *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl has-[>img:first-child]:pt-0",
+  "group/card flex flex-col gap-6 overflow-hidden rounded-xl border border-line bg-background py-(--card-spacing) shadow-card [--card-spacing:20px] sm:[--card-spacing:36px] *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl has-[>img:first-child]:pt-0",
   {
     variants: {
       variant: {

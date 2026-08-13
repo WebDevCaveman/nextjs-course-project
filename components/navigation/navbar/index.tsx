@@ -3,12 +3,13 @@ import Link from "next/link";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Theme from "./Theme";
+import MobileNavigation from "./MobileNavigation";
 
 const Navbar = () => {
   return (
-    <header className="border-line bg-base sticky top-0 z-40 flex h-16 items-center justify-between gap-6 border-b px-6">
+    <header className="border-line bg-background sticky top-0 z-40 flex h-16 items-center justify-between gap-6 border-b px-6">
       <Link href="/" className="text-fg hover:text-fg flex items-center gap-2.5">
-        <span className="flex size-[30px] items-center justify-center rounded-[9px] bg-[image:var(--accent-grad)]">
+        <span className="flex size-7.5 items-center justify-center rounded-[9px] bg-(image:--accent-grad)">
           <Image
             src="/brand/logo-mark.svg"
             alt="DevFlow Logo"
@@ -30,6 +31,7 @@ const Navbar = () => {
         <Avatar className="border-line size-8.5 border">
           <AvatarFallback>DF</AvatarFallback>
         </Avatar>
+        <MobileNavigation />
       </div>
     </header>
   );

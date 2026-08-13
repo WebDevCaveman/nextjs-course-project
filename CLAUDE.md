@@ -66,6 +66,16 @@ writes `text-sm` in its source already renders at 12.5px here, automatically. Do
 "fix" a shadcn component's type size unless a screen shows it genuinely wrong —
 that's a sign of a font-weight/line-height issue, not the scale.
 
+**A colour token must never be named after a step of the type scale.** `text-*`
+resolves against the colour palette first, so a `--color-base` next to `--text-base`
+makes `text-base` compile to a _colour_ — the size silently stops applying and the
+text picks up whatever `--color-base` holds. We hit exactly this: `--color-base`
+mapped to `--bg-primary`, so `Button variant="soft"` painted its label in the panel's
+own background (contrast 1.00, invisible), `<p>` rendered at 16px instead of 14px and
+`<h4>` disappeared in dark mode. The token is gone — that surface is `bg-background`
+now. Never add `--color-2xs/xs/sm/base/md/lg/xl/2xl/3xl/4xl`; name surfaces after what
+they are (`--color-subtle`, `--color-muted`), never after a size.
+
 ## Icons
 
 - **UI icons** — `lucide-react`, shadcn's default icon set, stroke width 2.

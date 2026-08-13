@@ -2,7 +2,7 @@
 "use client";
 
 const providerButton =
-  "border-line-strong bg-base text-fg hover:border-accent-solid flex h-[45px] items-center justify-center gap-2.5 rounded-lg border text-[15px] font-medium";
+  "border-line-strong bg-background text-fg hover:border-accent-solid flex h-[45px] items-center justify-center gap-2.5 rounded-lg border text-[15px] font-medium";
 import { signIn } from "next-auth/react";
 import ROUTES from "@/constants/routes";
 import { toast } from "sonner";

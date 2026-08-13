@@ -10,7 +10,7 @@ const inputVariants = cva(
       variant: {
         default:
           "h-14 rounded-xl border border-input bg-background px-4 text-base focus-visible:border-ring disabled:bg-input/50 dark:disabled:bg-input/80",
-        auth: "border-line bg-base focus:border-accent-solid h-12 rounded-lg border px-4 text-[15px]",
+        auth: "border-line bg-background focus:border-accent-solid h-12 rounded-lg border px-4 text-[15px]",
         unstyled: "h-auto border-0 bg-transparent px-0 shadow-none focus-visible:ring-0",
       },
     },

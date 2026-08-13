@@ -71,7 +71,7 @@ defaults alongside ours, they map to nothing in this design.
                        hover:brightness-[1.03]
                        → ONE per screen, the single highest-priority action.
     variant  primary  bg-accent-solid text-white hover:bg-accent-fg
-    variant  outline  border border-line-strong bg-base text-fg hover:bg-subtle
+    variant  outline  border border-line-strong bg-background text-fg hover:bg-subtle
     variant  soft     bg-accent-soft text-accent-solid hover:bg-accent-solid hover:text-white
     variant  ghost     bg-transparent font-medium text-fg-muted hover:bg-muted hover:text-fg
     variant  icon      border border-line bg-subtle text-[var(--icon-secondary)]
@@ -101,7 +101,7 @@ Nova's `Card` ships as `ring-1 ring-foreground/10 bg-card` with a `--card-spacin
 of 16px and a tinted `CardFooter` — none of which is our card. Patched once, so the
 recipe from `STYLING.md` ("Card, any kind") comes out of the component itself:
 
-    base       flex flex-col gap-6 rounded-xl border border-line bg-base shadow-card
+    base       flex flex-col gap-6 rounded-xl border border-line bg-background shadow-card
                py-(--card-spacing) + children px-(--card-spacing)
                --card-spacing: 20px mobile → 36px at sm  (the recipe's p-5 → p-9)
 
@@ -127,7 +127,7 @@ shadcn's default and are patched in `components/ui/field.tsx`:
     Field             gap-2 → gap-2.5              (the field-group recipe)
     FieldDescription  text-sm text-muted-foreground → text-xs text-fg-subtle   (our <small>)
     FieldError        text-sm text-destructive → text-xs text-danger           (recipe's error line)
-    FieldSeparator    bg-background → bg-base, text-[13px] text-fg-subtle      (the "or" rule)
+    FieldSeparator    text-sm text-muted-foreground → text-[13px] text-fg-subtle    (the "or" rule)
 
 Required marker stays the recipe's `<span class="text-accent-solid">*</span>` inside
 the label. Auth screens do **not** use this — they have their own `AuthField` at
@@ -208,7 +208,7 @@ install — do not leave the shadcn default and override at each call site.
                                  + add variant "unstyled": border-0 bg-transparent h-auto
                                    px-0 shadow-none focus-visible:ring-0 (for search/editor)
                                  + add variant "auth": h-12 rounded-lg border border-line
-                                   bg-base px-4 text-[15px] focus:border-accent-solid
+                                   bg-background px-4 text-[15px] focus:border-accent-solid
                                    → the `AuthField` sizing from STYLING.md §3, as a
                                      variant rather than a separate component. Auth
                                      screens only — never mix it with the default on
@@ -235,12 +235,12 @@ construction — the base layer no longer touches form fields at all (see global
                + <small class="text-danger"> for the message
     disabled   shadcn's own disabled: state — do not add a custom one
 
-    search     wrap  flex items-center gap-3 h-14 px-[18px] rounded-xl bg-base
+    search     wrap  flex items-center gap-3 h-14 px-[18px] rounded-xl bg-background
                      border border-line focus-within:border-accent-solid
                icon  size-5 text-fg-subtle (Lucide `Search`)
                input `<Input variant="unstyled" className="flex-1" />`
 
-    editor     wrap  rounded-xl border border-line bg-base overflow-hidden
+    editor     wrap  rounded-xl border border-line bg-background overflow-hidden
                bar   flex flex-wrap items-center gap-1 px-3 py-2 border-b border-line
                      bg-subtle
                tool  size-[30px] rounded-md text-fg-subtle hover:bg-muted hover:text-fg
@@ -251,7 +251,7 @@ construction — the base layer no longer touches form fields at all (see global
 
 ## Question card — local, no shadcn equivalent (`components/devflow/question-card.tsx`)
 
-    card       flex flex-col gap-6 rounded-xl border border-line bg-base p-9
+    card       flex flex-col gap-6 rounded-xl border border-line bg-background p-9
                shadow-card hover:border-accent-solid
                → mobile p-5
     title      h2, base layer — no class
@@ -272,20 +272,20 @@ construction — the base layer no longer touches form fields at all (see global
 `components/devflow/tag-card.tsx` · `user-card.tsx` · `job-card.tsx`. Composed from
 shadcn `Avatar` (user-card) and `Badge`/`Button` (job-card) — not built from scratch.
 
-    tag-card   flex flex-col gap-3.5 rounded-xl border border-line bg-base p-9
+    tag-card   flex flex-col gap-3.5 rounded-xl border border-line bg-background p-9
                shadow-card hover:border-accent-solid
                name  w-fit rounded-sm bg-muted px-5 py-2 text-base font-semibold
                desc  text-sm line-clamp-2
                count text-sm font-semibold text-accent-solid
 
     user-card  flex flex-col items-center gap-3.5 rounded-xl border border-line
-               bg-base p-9 shadow-card text-center
+               bg-background p-9 shadow-card text-center
                avatar shadcn `Avatar`, size-[100px]
                name   text-lg font-semibold
                handle text-sm text-fg-subtle
                tags   flex gap-2 pt-1 — Tag.sm each
 
-    job-card   flex gap-6 rounded-xl border border-line bg-base p-9 shadow-card
+    job-card   flex gap-6 rounded-xl border border-line bg-background p-9 shadow-card
                logo  size-[54px] rounded-xl object-contain bg-subtle p-2 shrink-0
                body  flex-1 min-w-0 flex flex-col gap-3
                head  flex items-start justify-between gap-4
@@ -312,14 +312,14 @@ Three siblings. Not nested.
 
     shell      flex min-h-screen bg-subtle
     nav        w-[266px] shrink-0 sticky top-0 h-screen overflow-y-auto
-               border-r border-line bg-base flex flex-col
+               border-r border-line bg-background flex flex-col
                → below md: fixed bottom-0 inset-x-0 h-auto flex-row border-t border-r-0
     main       flex-1 min-w-0 flex flex-col gap-10 px-[30px] py-10
                max-w-[1100px] mx-auto
     panel      w-[350px] shrink-0 sticky top-0 h-screen overflow-y-auto
-               border-l border-line bg-base p-6 hidden xl:flex flex-col gap-9
+               border-l border-line bg-background p-6 hidden xl:flex flex-col gap-9
     header     sticky top-0 z-40 h-[80px] flex items-center gap-6 px-6
-               border-b border-line bg-base
+               border-b border-line bg-background
 
     nav item   h-[52px] px-4 rounded-lg flex items-center gap-4 text-md
                inactive font-medium text-fg-muted hover:bg-muted
