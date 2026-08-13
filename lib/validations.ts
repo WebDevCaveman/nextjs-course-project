@@ -8,6 +8,8 @@ export const signInSchema = z.object({
     .max(24, { message: "Password must be at most 24 characters" }),
 });
 
+export const forgotPasswordSchema = signInSchema.pick({ email: true });
+
 export const signUpSchema = signInSchema.extend({
   username: z
     .string()

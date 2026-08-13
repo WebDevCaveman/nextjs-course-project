@@ -1,5 +1,4 @@
 import Image from "next/image";
-import SocialAuthForm from "@/components/forms/SocialAuthForm";
 
 const AuthLayout = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -12,10 +11,8 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
           </span>
         </div>
 
-        {/* SignIn / SignUp — app/(auth)/sign-in/page.tsx i sign-up/page.tsx */}
+        {/* SignIn / SignUp / ForgotPassword — strony w grupie app/(auth) */}
         {children}
-
-        <SocialAuthForm />
       </section>
     </main>
   );
