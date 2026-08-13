@@ -37,12 +37,13 @@ same table's other half: which shadcn component, which variant, verbatim, every 
 | Toast on submit/error                           | `Sonner` (`toast()`) | default                            |                                                                                                         |
 | Tab set (Questions/Answers/Activity on profile) | `Tabs`               | default                            |                                                                                                         |
 | Divider                                         | `Separator`          | default                            | replaces bare `<hr>` inside shadcn-composed screens; `<hr>` base-layer rule still applies to plain HTML |
+| Card wrapper                                    | `Card`               | `variant="static"\|"interactive"`  | patched to the card recipe — see §Card below. `interactive` adds the hover border, for cards in a list  |
+| Field group (label + control + hint/error)      | `Field`              | patched default (see §Field below) | `FieldGroup` stacks them; `FieldError` replaces the `<small class="text-danger">` in the recipe         |
 
-**Not used — build local instead, nothing to install:** `Form` (we don't use
-react-hook-form — plain HTML forms + the field-group recipe), `Command`/`Combobox`,
-`Calendar`/`DatePicker`, `Chart`, `Table` (base-layer `<table>` covers it), `Card`
-(our card recipe is a plain `<article>`/`<section>`, not shadcn's `Card` wrapper —
-do not use both). If a screen seems to need one of these, ask before installing it.
+**Not used — build local instead, nothing to install:** `Form` (`Field` +
+react-hook-form's `Controller` covers it), `Command`/`Combobox`,
+`Calendar`/`DatePicker`, `Chart`, `Table` (base-layer `<table>` covers it).
+If a screen seems to need one of these, ask before installing it.
 
 ---
 
@@ -50,6 +51,7 @@ do not use both). If a screen seems to need one of these, ask before installing 
 
     npx shadcn@latest add button input textarea select label badge avatar
         separator tabs dropdown-menu dialog sheet tooltip skeleton sonner
+        card field
 
 This is the full set used across the 24 screens, plus a small margin (`sheet`,
 `tooltip`, `skeleton`, `sonner`) for near-term screens that reuse the same patterns.
@@ -75,6 +77,10 @@ defaults alongside ours, they map to nothing in this design.
     variant  icon      border border-line bg-subtle text-[var(--icon-secondary)]
 
     size     cta      h-[45px] px-[18px] rounded-[11px] text-base
+    size     auth     h-[45px] px-[18px] rounded-lg     text-base
+                       → cta at the 8px radius STYLING.md §3 asks for inside an auth
+                         card. Same height, same Sheen — only the corner differs.
+                         Auth screens only; everywhere else the hero button is `cta`.
     size     md       h-[42px] px-[22px] rounded-md    text-base   (shadcn "default")
     size     sm       h-[38px] px-[15px] rounded-md    text-sm
     size     icon     size-[34px] rounded-md justify-center px-0
@@ -86,6 +92,46 @@ defaults alongside ours, they map to nothing in this design.
 
 Call sites: `<Button variant="cta">`, `<Button variant="soft" size="sm">`. Never
 `<Button className="bg-...">` — that's the override this system exists to prevent.
+
+---
+
+## Card — shadcn `Card`, patched to the card recipe
+
+Nova's `Card` ships as `ring-1 ring-foreground/10 bg-card` with a `--card-spacing`
+of 16px and a tinted `CardFooter` — none of which is our card. Patched once, so the
+recipe from `STYLING.md` ("Card, any kind") comes out of the component itself:
+
+    base       flex flex-col gap-6 rounded-xl border border-line bg-base shadow-card
+               py-(--card-spacing) + children px-(--card-spacing)
+               --card-spacing: 20px mobile → 36px at sm  (the recipe's p-5 → p-9)
+
+    variant  static       no hover — confirmation panels, auth, anything not clickable
+    variant  interactive  hover:border-accent-solid — cards in a list
+
+    CardTitle        text-xl font-semibold tracking-[-0.3px] leading-[1.24]  (matches h2)
+    CardDescription  text-sm text-fg-muted
+    CardFooter       flex flex-wrap items-center justify-between gap-4 — the card-footer-meta
+                     recipe, no tinted background and no top border
+
+`QuestionCard`/`TagCard`/`UserCard`/`JobCard` stay local components — they compose
+`Card` rather than re-declaring the shell.
+
+---
+
+## Field — shadcn `Field`, patched to the field-group recipe
+
+Covers label + control + hint/error. `Field` is the group wrapper, `FieldGroup`
+stacks several, `FieldLabel` is our patched `Label`. Three values differ from
+shadcn's default and are patched in `components/ui/field.tsx`:
+
+    Field             gap-2 → gap-2.5              (the field-group recipe)
+    FieldDescription  text-sm text-muted-foreground → text-xs text-fg-subtle   (our <small>)
+    FieldError        text-sm text-destructive → text-xs text-danger           (recipe's error line)
+    FieldSeparator    bg-background → bg-base, text-[13px] text-fg-subtle      (the "or" rule)
+
+Required marker stays the recipe's `<span class="text-accent-solid">*</span>` inside
+the label. Auth screens do **not** use this — they have their own `AuthField` at
+h-12, see `STYLING.md` §3.
 
 ---
 
@@ -161,6 +207,12 @@ install — do not leave the shadcn default and override at each call site.
                                  disabled:cursor-not-allowed (keep shadcn's disabled: opacity)
                                  + add variant "unstyled": border-0 bg-transparent h-auto
                                    px-0 shadow-none focus-visible:ring-0 (for search/editor)
+                                 + add variant "auth": h-12 rounded-lg border border-line
+                                   bg-base px-4 text-[15px] focus:border-accent-solid
+                                   → the `AuthField` sizing from STYLING.md §3, as a
+                                     variant rather than a separate component. Auth
+                                     screens only — never mix it with the default on
+                                     one screen.
 
     components/ui/textarea.tsx  h-auto min-h-[160px] w-full rounded-xl border border-input
                                  bg-background px-4 py-4 text-base leading-[1.5]

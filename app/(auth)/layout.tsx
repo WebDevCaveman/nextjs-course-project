@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { Separator } from "@/components/ui/separator";
 import SocialAuthForm from "@/components/forms/SocialAuthForm";
 
 const AuthLayout = ({ children }: { children: React.ReactNode }) => {
@@ -15,8 +14,6 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
 
         {/* SignIn / SignUp — app/(auth)/sign-in/page.tsx i sign-up/page.tsx */}
         {children}
-
-        <Separator />
 
         <SocialAuthForm />
       </section>
