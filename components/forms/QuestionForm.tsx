@@ -8,10 +8,16 @@ import { Input } from "@/components/ui/input";
 import { askQuestionSchema } from "@/lib/validations";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
+import { useRef } from "react";
+import { MDXEditorMethods } from "@mdxeditor/editor";
+import dynamic from "next/dynamic";
+
+const Editor = dynamic(() => import("@/components/editor"), {
+  // Make sure we turn SSR off
+  ssr: false,
+});
 
 const QuestionForm = () => {
-  const handleCreateQuestion = () => {};
-
   const form = useForm({
     resolver: zodResolver(askQuestionSchema),
     defaultValues: {
@@ -20,6 +26,10 @@ const QuestionForm = () => {
       tags: [] as string[],
     },
   });
+
+  const editorRef = useRef<MDXEditorMethods>(null);
+
+  const handleCreateQuestion = () => {};
 
   return (
     <form className="flex flex-col gap-9" onSubmit={form.handleSubmit(handleCreateQuestion)}>
@@ -46,7 +56,7 @@ const QuestionForm = () => {
               <FieldLabel htmlFor="content">
                 Detailed explanation of your problem <span className="text-accent-solid">*</span>
               </FieldLabel>
-              <Input {...field} id="content" aria-invalid={fieldState.invalid} />
+              <Editor value={field.value} editorRef={editorRef} fieldChange={field.onChange} />
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
             </Field>
           )}

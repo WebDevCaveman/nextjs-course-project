@@ -2,6 +2,44 @@
 @import "tw-animate-css";
 @import "./tokens.css";
 @import "devicon/devicon.min.css";
+@import "@mdxeditor/editor/style.css";
+
+/* MDXEditor ships its own Radix-colors theme (blue accent, slate base) as
+   plain unlayered CSS, which always outranks Tailwind's @layer utilities —
+   so this override has to live here, unlayered too, not inside @layer base.
+   It reads every colour through these custom properties on its root
+   `.mdxeditor` element; remapping them is the library's supported retheming
+   path. Popups (link/image dialogs) portal to a sibling
+   `.mdxeditor-popup-container` outside that root, so it needs the same vars. */
+.mdxeditor,
+.mdxeditor-popup-container {
+  --accentBase: var(--color-background);
+  --accentBgSubtle: var(--color-accent-soft);
+  --accentBg: var(--color-accent-soft);
+  --accentBgHover: var(--color-accent-soft);
+  --accentBgActive: var(--color-accent-soft);
+  --accentLine: var(--color-line);
+  --accentBorder: var(--red-500);
+  --accentBorderHover: var(--red-500);
+  --accentSolid: var(--red-500);
+  --accentSolidHover: var(--red-600);
+  --accentText: var(--color-accent-solid);
+  --accentTextContrast: var(--b-w-white);
+
+  --basePageBg: var(--color-background);
+  --baseBase: var(--color-background);
+  --baseBgSubtle: var(--color-subtle);
+  --baseBg: var(--color-subtle);
+  --baseBgHover: var(--color-muted);
+  --baseBgActive: var(--color-muted);
+  --baseLine: var(--color-line);
+  --baseBorder: var(--color-line);
+  --baseBorderHover: var(--color-line-strong);
+  --baseSolid: var(--color-fg-subtle);
+  --baseSolidHover: var(--color-fg-muted);
+  --baseText: var(--color-fg-muted);
+  --baseTextContrast: var(--color-fg);
+}
 
 /* ══ Fonts ══ Self-hosted. See FONTS.md — files go in public/fonts/. ══ */
 
