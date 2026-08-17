@@ -8,9 +8,7 @@ const RootLayout = ({ children }: { children: React.ReactNode }) => {
       <Navbar />
       <div className="flex">
         <LeftSidebar />
-        <main className="mx-auto flex min-w-0 max-w-[1100px] flex-1 flex-col gap-10 px-[30px] py-10">
-          {children}
-        </main>
+        <main className="mx-auto flex max-w-[1100px] min-w-0 flex-1 flex-col gap-10 px-[30px] py-10">{children}</main>
         <RightSidebar />
       </div>
     </>
