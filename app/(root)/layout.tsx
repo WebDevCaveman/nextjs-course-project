@@ -4,14 +4,16 @@ import RightSidebar from "@/components/navigation/RightSidebar";
 
 const RootLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <main>
+    <>
       <Navbar />
       <div className="flex">
         <LeftSidebar />
-        <div className="min-w-0 flex-1">{children}</div>
+        <main className="mx-auto flex min-w-0 max-w-[1100px] flex-1 flex-col gap-10 px-[30px] py-10">
+          {children}
+        </main>
         <RightSidebar />
       </div>
-    </main>
+    </>
   );
 };
 
