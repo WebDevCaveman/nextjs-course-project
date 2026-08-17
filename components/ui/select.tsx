@@ -4,8 +4,8 @@ import * as React from "react";
 import { Select as SelectPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
-import { HugeIconSvg } from "@/components/devflow/icons/huge/HugeIconSvg";
-import { uiIcons } from "@/components/devflow/icons/huge/data/ui";
+import { HugeIconSvg } from "@/components/icons/huge/HugeIconSvg";
+import { uiIcons } from "@/components/icons/huge/data/ui";
 
 function Select({ ...props }: React.ComponentProps<typeof SelectPrimitive.Root>) {
   return <SelectPrimitive.Root data-slot="select" {...props} />;

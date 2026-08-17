@@ -1,6 +1,6 @@
 # ICONS.md — the Huge Icons set
 
-UI icons are **Huge Icons (outline)**: 1349 icons vendored in `components/devflow/icons/huge/`,
+UI icons are **Huge Icons (outline)**: 1349 icons vendored in `components/icons/huge/`,
 every one a 24×24 artboard of filled paths painted with `currentColor`. There is no icon
 package to install and nothing to configure.
 
@@ -17,7 +17,7 @@ affects them.
 In a Server Component — the category chunk loads on the server, nothing ships to the client:
 
 ```tsx
-import { HugeIcon } from "@/components/devflow/icons/huge";
+import { HugeIcon } from "@/components/icons/huge";
 
 <HugeIcon name="interface/search-01" size={20} className="text-muted-foreground" />;
 ```
@@ -27,8 +27,8 @@ the browser for one glyph. Use the client-safe subset:
 
 ```tsx
 "use client";
-import { HugeIconSvg } from "@/components/devflow/icons/huge/HugeIconSvg";
-import { uiIcons } from "@/components/devflow/icons/huge/data/ui";
+import { HugeIconSvg } from "@/components/icons/huge/HugeIconSvg";
+import { uiIcons } from "@/components/icons/huge/data/ui";
 
 <HugeIconSvg icon={uiIcons.check} size={16} />;
 ```
@@ -45,7 +45,7 @@ that comment is the only mapping back to the source.
 
 ## Finding a name — look at the icon, don't trust the name
 
-`components/devflow/icons/huge/ICON-NAMES.md` is the full list, grouped by category — grep it.
+`components/icons/huge/ICON-NAMES.md` is the full list, grouped by category — grep it.
 At runtime: `HUGE_ICON_NAMES`, `HUGE_ICON_CATEGORIES`, `HUGE_ICON_COUNT_BY_CATEGORY`.
 
 Names come from the Figma file and **several of them are wrong about what they draw**. The

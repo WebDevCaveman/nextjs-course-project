@@ -2,8 +2,8 @@
 
 import { useTheme } from "next-themes";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
-import { HugeIconSvg } from "@/components/devflow/icons/huge/HugeIconSvg";
-import { uiIcons } from "@/components/devflow/icons/huge/data/ui";
+import { HugeIconSvg } from "@/components/icons/huge/HugeIconSvg";
+import { uiIcons } from "@/components/icons/huge/data/ui";
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme();

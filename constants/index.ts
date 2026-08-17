@@ -1,4 +1,4 @@
-import { uiIcons } from "@/components/devflow/icons/huge/data/ui";
+import { uiIcons } from "@/components/icons/huge/data/ui";
 import ROUTES from "./routes";
 
 export const links = [

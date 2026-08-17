@@ -4,7 +4,7 @@ import { links } from "@/constants";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SheetClose } from "@/components/ui/sheet";
-import { HugeIconSvg } from "@/components/devflow/icons/huge/HugeIconSvg";
+import { HugeIconSvg } from "@/components/icons/huge/HugeIconSvg";
 import ROUTES from "@/constants/routes";
 import { cn } from "@/lib/utils";
 

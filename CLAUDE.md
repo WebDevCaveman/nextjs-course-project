@@ -25,9 +25,10 @@ When asked to extract a component:
    `Separator`, `Skeleton` are shadcn primitives with variant props already wired to
    our tokens — never rebuild what shadcn already gives you.
 2. `QuestionCard`, `TagCard`, `UserCard`, `JobCard`, `Tag`, `VoteControl`, `AppShell`,
-   `RichTextEditor` have no shadcn equivalent — build them as local components in
-   `components/devflow/`, composed from shadcn primitives where they overlap
-   (e.g. `JobCard`'s apply button IS `<Button variant="soft" size="sm">`).
+   `RichTextEditor` have no shadcn equivalent — build them as local components, own
+   kebab-case folder under `components/`, PascalCase file
+   (e.g. `components/tag-list/TagList.tsx`), composed from shadcn primitives where
+   they overlap (e.g. `JobCard`'s apply button IS `<Button variant="soft" size="sm">`).
 3. Never introduce a new variant. If a shadcn variant doesn't exist yet for what
    you need, add it to the component's own variants object — do not inline override
    classes at the call site.
@@ -79,7 +80,7 @@ they are (`--color-subtle`, `--color-muted`), never after a size.
 ## Icons
 
 - **UI icons** — Huge Icons (outline), 1349 icons vendored in
-  `components/devflow/icons/huge/`. Read `ICONS.md` before using them. Server
+  `components/icons/huge/`. Read `ICONS.md` before using them. Server
   Components render `<HugeIcon name="category/icon" size={n} />`; `"use client"`
   components render `<HugeIconSvg icon={uiIcons.x} size={n} />` from
   `huge/data/ui.ts` — importing a whole `data/<category>` module into the client

@@ -12,8 +12,8 @@ export interface HugeIconSvgProps extends Omit<SVGProps<SVGSVGElement>, "dangero
  * and pass the entry in, so only that chunk ends up in the client bundle.
  *
  *   "use client";
- *   import { icons } from "@/components/devflow/icons/huge/data/interface";
- *   import { HugeIconSvg } from "@/components/devflow/icons/huge/HugeIconSvg";
+ *   import { icons } from "@/components/icons/huge/data/interface";
+ *   import { HugeIconSvg } from "@/components/icons/huge/HugeIconSvg";
  *   <HugeIconSvg icon={icons["search-01"]} size={20} />
  */
 export function HugeIconSvg({ icon, size = 24, ...props }: HugeIconSvgProps) {

@@ -4,8 +4,8 @@ import * as React from "react";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
-import { HugeIconSvg } from "@/components/devflow/icons/huge/HugeIconSvg";
-import { uiIcons } from "@/components/devflow/icons/huge/data/ui";
+import { HugeIconSvg } from "@/components/icons/huge/HugeIconSvg";
+import { uiIcons } from "@/components/icons/huge/data/ui";
 
 function DropdownMenu({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
   return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />;

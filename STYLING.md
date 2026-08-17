@@ -74,7 +74,7 @@ there too.
 
 Three shapes cover Welcome, Sign in, Sign up, Forgot password, Check your email,
 Set new password, Account exists. None is a shadcn primitive — build as local
-components in `components/devflow/auth/`. Their field height (48px) and input
+components in `components/auth/`. Their field height (48px) and input
 radius (8px) are intentionally **not** the same as the rest of the app's shadcn
 `Input` (14px/10px, patched in COMPONENTS.md) — auth screens are their own
 enclosed surface. Do not unify the two; do not patch shadcn `Input` to match this,

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { HugeIcon } from "@/components/devflow/icons/huge";
+import { HugeIcon } from "@/components/icons/huge";
 import NavLinks from "@/components/navigation/NavLinks";
 import { Button } from "@/components/ui/button";
 import ROUTES from "@/constants/routes";

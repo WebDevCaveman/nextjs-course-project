@@ -4,7 +4,8 @@ Read this at extraction time, when a styled block becomes a React component.
 **Check the shadcn column first.** If shadcn has the primitive, install it and wire
 our variants into its own `cva()` config — do not rebuild the primitive by hand and
 do not override it with call-site classes. Only components with no shadcn equivalent
-(bottom of this file) get built from scratch, in `components/devflow/`.
+(bottom of this file) get built from scratch, own kebab-case folder under
+`components/`, PascalCase file (e.g. `components/tag-list/TagList.tsx`).
 
 Every size below is a real value from the design. Do not round to a 4/8px grid.
 
@@ -148,21 +149,21 @@ h-12, see `STYLING.md` §3.
 Full recipes moved to `STYLING.md` §3 — read there before building. Summary of the
 component boundary:
 
-    components/devflow/auth/auth-card.tsx      Sign in, Sign up, Forgot password,
-                                                Set new password, Check your email,
-                                                Account exists — same shell, fields
-                                                and social row optional per screen.
-                                                ("confirmation card" in SCREENS.md is
-                                                this same component with no fields.)
-    components/devflow/auth/auth-field.tsx     h-12 field, NOT shadcn Input — see
-                                                the height note in STYLING.md §3.
-    components/devflow/auth/oauth-row.tsx      divider + GitHub/Google buttons
-    components/devflow/auth/welcome-card.tsx   Welcome only — dark, fixed colours,
-                                                circular provider icons, own layout
+    components/auth/AuthCard.tsx      Sign in, Sign up, Forgot password,
+                                       Set new password, Check your email,
+                                       Account exists — same shell, fields
+                                       and social row optional per screen.
+                                       ("confirmation card" in SCREENS.md is
+                                       this same component with no fields.)
+    components/auth/AuthField.tsx     h-12 field, NOT shadcn Input — see
+                                       the height note in STYLING.md §3.
+    components/auth/OAuthRow.tsx      divider + GitHub/Google buttons
+    components/auth/WelcomeCard.tsx   Welcome only — dark, fixed colours,
+                                       circular provider icons, own layout
 
 ---
 
-## Tag — local, no shadcn equivalent (`components/devflow/tag.tsx`)
+## Tag — local, no shadcn equivalent (`components/tag/Tag.tsx`)
 
 Square-ish, never a pill. Pills mean status; tags mean topic. Devicon goes inside a
 tag when it names a technology (`<i class="devicon-typescript-plain colored" />`
@@ -257,7 +258,7 @@ construction — the base layer no longer touches form fields at all (see global
 
 ---
 
-## Question card — local, no shadcn equivalent (`components/devflow/question-card.tsx`)
+## Question card — local, no shadcn equivalent (`components/question-card/QuestionCard.tsx`)
 
     card       flex flex-col gap-6 rounded-xl border border-line bg-background p-9
                shadow-card hover:border-accent-solid
@@ -277,8 +278,9 @@ construction — the base layer no longer touches form fields at all (see global
 
 ## Tag card · User card · Job card — local, no shadcn equivalent
 
-`components/devflow/tag-card.tsx` · `user-card.tsx` · `job-card.tsx`. Composed from
-shadcn `Avatar` (user-card) and `Badge`/`Button` (job-card) — not built from scratch.
+`components/tag-card/TagCard.tsx` · `components/user-card/UserCard.tsx` ·
+`components/job-card/JobCard.tsx`. Composed from shadcn `Avatar` (user-card) and
+`Badge`/`Button` (job-card) — not built from scratch.
 
     tag-card   flex flex-col gap-3.5 rounded-xl border border-line bg-background p-9
                shadow-card hover:border-accent-solid
@@ -302,7 +304,7 @@ shadcn `Avatar` (user-card) and `Badge`/`Button` (job-card) — not built from s
 
 ---
 
-## Vote control — local, no shadcn equivalent (`components/devflow/vote-control.tsx`)
+## Vote control — local, no shadcn equivalent (`components/vote-control/VoteControl.tsx`)
 
     wrap       flex flex-col items-center gap-1
     button     size-[30px] rounded-md flex items-center justify-center
@@ -341,7 +343,7 @@ markers, same as the Tag list recipe.
 
 ---
 
-## Tag list — local, no shadcn equivalent (`components/devflow/tag-list.tsx`)
+## Tag list — local, no shadcn equivalent (`components/tag-list/TagList.tsx`)
 
 The `md`-chip tag list, in both directions. One component, two props: `tags` and
 `inline`. The uppercase `Tag.sm` row on question/user cards is a different shape —
@@ -395,7 +397,7 @@ Neither side column scrolls with the page. Each owns its own scroll.
 
 ## Icons
 
-    UI         Huge Icons (outline), components/devflow/icons/huge/ — no strokeWidth
+    UI         Huge Icons (outline), components/icons/huge/ — no strokeWidth
                server: <HugeIcon name="interface/home-01" size={21} />
                client: <HugeIconSvg icon={uiIcons.home} size={21} />
                sizes: 14 meta · 16 button · 20 search · 21 nav — see ICONS.md

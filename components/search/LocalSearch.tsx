@@ -1,7 +1,7 @@
 "use client";
 
-import { uiIcons } from "@/components/devflow/icons/huge/data/ui";
-import { HugeIconSvg } from "@/components/devflow/icons/huge/HugeIconSvg";
+import { uiIcons } from "@/components/icons/huge/data/ui";
+import { HugeIconSvg } from "@/components/icons/huge/HugeIconSvg";
 import { Input } from "@/components/ui/input";
 import { formUrlQuery, removeKeysFromUrlQuery } from "@/lib/url";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";

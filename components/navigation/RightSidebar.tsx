@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import TagList from "@/components/devflow/tag-list";
+import TagList from "@/components/tag-list/TagList";
 
 // Placeholder content — replaced with real data later.
 const hotQuestions = [

@@ -1,5 +1,5 @@
-import EmptyState from "@/components/devflow/empty-state";
-import { HugeIcon } from "@/components/devflow/icons/huge";
+import EmptyState from "@/components/empty-state/EmptyState";
+import { HugeIcon } from "@/components/icons/huge";
 import HomeFilter from "@/components/filters/HomeFilter";
 import LocalSearch from "@/components/search/LocalSearch";
 import { Button } from "@/components/ui/button";

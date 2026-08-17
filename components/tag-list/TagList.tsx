@@ -1,5 +1,5 @@
-import { uiIcons } from "@/components/devflow/icons/huge/data/ui";
-import { HugeIconSvg } from "@/components/devflow/icons/huge/HugeIconSvg";
+import { uiIcons } from "@/components/icons/huge/data/ui";
+import { HugeIconSvg } from "@/components/icons/huge/HugeIconSvg";
 import { tagIcon } from "@/lib/devicon";
 import { cn } from "@/lib/utils";
 
