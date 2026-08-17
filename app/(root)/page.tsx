@@ -1,3 +1,4 @@
+import QuestionCard from "@/components/cards/QuestionCard";
 import EmptyState from "@/components/empty-state/EmptyState";
 import { HugeIcon } from "@/components/icons/huge";
 import HomeFilter from "@/components/filters/HomeFilter";
@@ -7,23 +8,29 @@ import { filters } from "@/constants";
 import ROUTES from "@/constants/routes";
 import Link from "next/link";
 
-const questions = [
+const questions: Question[] = [
   {
-    id: "1",
+    _id: "1",
     title: "How to center a div?",
-    tags: ["css", "html"],
-    author: "Krzysztof",
-    createdAt: new Date("2023-01-01").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+    tags: [
+      { _id: "css", name: "css" },
+      { _id: "html", name: "html" },
+    ],
+    author: { _id: "1", name: "Krzysztof" },
+    createdAt: new Date("2023-01-01"),
     votes: 10,
     answers: 2,
     views: 100,
   },
   {
-    id: "2",
+    _id: "2",
     title: "How to use React Query?",
-    tags: ["react", "typescript"],
-    author: "Anna",
-    createdAt: new Date("2023-01-02").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+    tags: [
+      { _id: "react", name: "react" },
+      { _id: "typescript", name: "typescript" },
+    ],
+    author: { _id: "2", name: "Anna" },
+    createdAt: new Date("2023-01-02"),
     votes: 24,
     answers: 1,
     views: 42,
@@ -46,7 +53,7 @@ const Home = async ({ searchParams }: SearchParams) => {
     .sort((a, b) => {
       switch (filter) {
         case filters[0].value:
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          return b.createdAt.getTime() - a.createdAt.getTime();
         case filters[1].value:
           return b.votes - a.votes;
         case filters[2].value:
@@ -79,37 +86,7 @@ const Home = async ({ searchParams }: SearchParams) => {
           description="There are no questions matching this view yet. Be the first to ask one."
         />
       ) : (
-        filteredQuestions.map((question) => (
-          <article
-            key={question.id}
-            className="border-line bg-background shadow-card hover:border-accent-solid flex flex-col gap-6 rounded-xl border p-5 md:p-9"
-          >
-            <h2>{question.title}</h2>
-
-            <ul className="flex list-none flex-row flex-wrap gap-2 pl-0">
-              {question.tags.map((tag) => (
-                <li
-                  key={tag}
-                  className="bg-muted text-fg-subtle inline-flex h-[29px] items-center rounded-md px-4 text-[10px] font-semibold tracking-[0.04em] uppercase"
-                >
-                  {tag}
-                </li>
-              ))}
-            </ul>
-
-            <footer className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-1.5">
-                <span className="text-base font-medium">{question.author}</span>
-                <span className="text-fg-subtle text-sm">• asked {question.createdAt}</span>
-              </div>
-              <div className="text-fg-subtle flex items-center gap-4 text-sm">
-                <span className="flex items-center gap-1.5">{question.votes} Votes</span>
-                <span className="flex items-center gap-1.5">{question.answers} Answers</span>
-                <span className="flex items-center gap-1.5">{question.views} Views</span>
-              </div>
-            </footer>
-          </article>
-        ))
+        filteredQuestions.map((question) => <QuestionCard key={question._id} {...question} />)
       )}
     </>
   );

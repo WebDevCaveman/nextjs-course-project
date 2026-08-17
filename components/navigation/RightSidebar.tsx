@@ -11,15 +11,15 @@ const hotQuestions = [
   { id: "5", title: "What is an example of 3 numbers that do not make up a vector?" },
 ];
 
-const popularTags = [
-  { id: "react", name: "react", count: "18,209" },
-  { id: "javascript", name: "javascript", count: "15,730" },
-  { id: "typescript", name: "typescript", count: "12,486" },
-  { id: "nodejs", name: "nodejs", count: "9,041" },
-  { id: "python", name: "python", count: "7,552" },
-  { id: "tailwindcss", name: "tailwindcss", count: "5,318" },
-  { id: "docker", name: "docker", count: "4,127" },
-  { id: "postgresql", name: "postgresql", count: "3,864" },
+const popularTags: Tag[] = [
+  { _id: "react", name: "react", count: "18,209" },
+  { _id: "javascript", name: "javascript", count: "15,730" },
+  { _id: "typescript", name: "typescript", count: "12,486" },
+  { _id: "nodejs", name: "nodejs", count: "9,041" },
+  { _id: "python", name: "python", count: "7,552" },
+  { _id: "tailwindcss", name: "tailwindcss", count: "5,318" },
+  { _id: "docker", name: "docker", count: "4,127" },
+  { _id: "postgresql", name: "postgresql", count: "3,864" },
 ];
 
 const RightSidebar = () => {
