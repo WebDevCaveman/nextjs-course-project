@@ -1,6 +1,8 @@
 import { HugeIcon } from "@/components/devflow/icons/huge";
+import HomeFilter from "@/components/filters/HomeFilter";
 import LocalSearch from "@/components/search/LocalSearch";
 import { Button } from "@/components/ui/button";
+import { filters } from "@/constants";
 import ROUTES from "@/constants/routes";
 import Link from "next/link";
 
@@ -10,7 +12,7 @@ const questions = [
     title: "How to center a div?",
     tags: ["css", "html"],
     author: "Krzysztof",
-    createdAt: "2 hours ago",
+    createdAt: new Date("2023-01-01").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
     votes: 10,
     answers: 2,
     views: 100,
@@ -20,8 +22,8 @@ const questions = [
     title: "How to use React Query?",
     tags: ["react", "typescript"],
     author: "Anna",
-    createdAt: "1 day ago",
-    votes: 4,
+    createdAt: new Date("2023-01-02").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+    votes: 24,
     answers: 1,
     views: 42,
   },
@@ -33,8 +35,23 @@ interface SearchParams {
 
 const Home = async ({ searchParams }: SearchParams) => {
   // Zapis query = "" pozwala nam na ustawienie domyślnej wartości dla query, jeśli nie zostanie przekazana w URL. Dzięki temu unikamy błędów związanych z brakiem wartości i możemy bezpiecznie filtrować pytania. Czyli w przypadku braku wartości wyswietlimy cala domyslna liste pytań. W przeciwnym razie, jeśli query jest obecne, filtrowanie zostanie wykonane na podstawie jego wartości.
-  const { query = "" } = await searchParams;
-  const filteredQuestions = questions.filter((question) => question.title.toLowerCase().includes(query?.toLowerCase()));
+  const { query = "", filter } = await searchParams;
+  const filteredQuestions = questions
+    .filter((question) => question.title.toLowerCase().includes(query?.toLowerCase()))
+    .sort((a, b) => {
+      switch (filter) {
+        case filters[0].value:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case filters[1].value:
+          return b.votes - a.votes;
+        case filters[2].value:
+          return b.answers - a.answers;
+        case filters[3].value:
+          return b.answers === 0 ? -1 : 1;
+        default:
+          return 0;
+      }
+    });
 
   return (
     <>
@@ -50,7 +67,7 @@ const Home = async ({ searchParams }: SearchParams) => {
 
       <LocalSearch route="/" iconName="search" placeholder="Search questions..." otherClasses="" />
 
-      <p>[HomeFilter placeholder]</p>
+      <HomeFilter />
 
       {filteredQuestions.map((question) => (
         <article

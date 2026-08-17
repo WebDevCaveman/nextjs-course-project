@@ -10,3 +10,10 @@ export const links = [
   { href: ROUTES.PROFILE, label: "Profile", icon: uiIcons.users },
   { href: ROUTES.ASK_QUESTION, label: "Ask a Question", icon: uiIcons.plus },
 ];
+
+export const filters = [
+  { name: "Newest", value: "newest" },
+  { name: "Recommended", value: "recommended" },
+  { name: "Frequent", value: "frequent" },
+  { name: "Unanswered", value: "unanswered" },
+];
