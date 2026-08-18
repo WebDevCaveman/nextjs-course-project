@@ -1,7 +1,6 @@
 "use client";
 
-import { uiIcons } from "@/components/icons/huge/data/ui";
-import { HugeIconSvg } from "@/components/icons/huge/HugeIconSvg";
+import TagList from "@/components/tag-list/TagList";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -11,6 +10,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useRef } from "react";
 import { MDXEditorMethods } from "@mdxeditor/editor";
 import dynamic from "next/dynamic";
+import * as z from "zod";
 
 const Editor = dynamic(() => import("@/components/editor"), {
   // Make sure we turn SSR off
@@ -29,7 +29,43 @@ const QuestionForm = () => {
 
   const editorRef = useRef<MDXEditorMethods>(null);
 
-  const handleCreateQuestion = () => {};
+  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>, field: { value: string[] }) => {
+    form.clearErrors("tags");
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const tagInput = event.currentTarget.value.trim().toLowerCase();
+
+      if (tagInput && tagInput.length <= 15 && !field.value.includes(tagInput)) {
+        form.setValue("tags", [...field.value, tagInput], {
+          shouldValidate: true,
+        });
+        event.currentTarget.value = "";
+      } else if (tagInput.length > 15) {
+        form.setError("tags", {
+          type: "manual",
+          message: "Tag should be less than 15 characters",
+        });
+      } else if (field.value.includes(tagInput)) {
+        form.setError("tags", {
+          type: "manual",
+          message: "Tag already exists",
+        });
+      }
+    }
+  };
+
+  const handleTagRemove = (tag: string, field: { value: string[] }) => {
+    form.setValue(
+      "tags",
+      field.value.filter((t) => t !== tag),
+      { shouldValidate: true }
+    );
+  };
+
+  const handleCreateQuestion = (data: z.infer<typeof askQuestionSchema>) => {
+    console.log(data);
+  };
 
   return (
     <form className="flex flex-col gap-9" onSubmit={form.handleSubmit(handleCreateQuestion)}>
@@ -53,7 +89,7 @@ const QuestionForm = () => {
           control={form.control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="content">
+              <FieldLabel onClick={() => editorRef.current?.focus()}>
                 Detailed explanation of your problem <span className="text-accent-solid">*</span>
               </FieldLabel>
               <Editor value={field.value} editorRef={editorRef} fieldChange={field.onChange} />
@@ -74,35 +110,14 @@ const QuestionForm = () => {
                 id="tags"
                 placeholder="Add tags..."
                 aria-invalid={fieldState.invalid}
-                onKeyDown={(event) => {
-                  if (event.key !== "Enter") return;
-                  event.preventDefault();
-
-                  const value = event.currentTarget.value.trim();
-                  if (!value || field.value.includes(value)) return;
-
-                  field.onChange([...field.value, value]);
-                  event.currentTarget.value = "";
-                }}
+                onKeyDown={(event) => handleInputKeyDown(event, field)}
               />
               {field.value.length > 0 && (
-                <ul className="flex list-none flex-wrap gap-2 pl-0">
-                  {field.value.map((tag) => (
-                    <li
-                      key={tag}
-                      className="bg-muted text-fg-muted inline-flex items-center gap-1.5 rounded-sm py-1 pr-1.5 pl-[10px] text-sm font-medium"
-                    >
-                      {tag}
-                      <button
-                        type="button"
-                        aria-label={`Remove ${tag}`}
-                        onClick={() => field.onChange(field.value.filter((t) => t !== tag))}
-                      >
-                        <HugeIconSvg icon={uiIcons.close} size={11} />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <TagList
+                  tags={field.value.map((tag) => ({ _id: tag, name: tag }))}
+                  inline
+                  onRemove={(tag) => handleTagRemove(tag, field)}
+                />
               )}
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
             </Field>

@@ -9,6 +9,8 @@ const ALIASES: Record<string, string> = {
   tailwind: "tailwindcss",
   k8s: "kubernetes",
   mongo: "mongodb",
+  html: "html5",
+  css: "css3",
 };
 
 const normalise = (name: string) =>
