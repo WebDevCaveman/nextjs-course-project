@@ -1,6 +1,6 @@
-import { Schema, models, model } from "mongoose";
+import { Schema, models, model, Document } from "mongoose";
 
-// Poniewa mongoose wspiera TS to najpierw trzeba stworzyć interfejs, który będzie reprezentował strukturę dokumentu w kolekcji "users". Interfejs ten będzie używany do typowania danych w aplikacji, co pozwoli na lepszą kontrolę nad danymi i uniknięcie błędów typów.
+// Poniewaz mongoose wspiera TS to najpierw trzeba stworzyć interfejs, który będzie reprezentował strukturę dokumentu w kolekcji "users". Interfejs ten będzie używany do typowania danych w aplikacji, co pozwoli na lepszą kontrolę nad danymi i uniknięcie błędów typów.
 export interface IUser {
   name: string;
   username: string;
@@ -11,6 +11,8 @@ export interface IUser {
   portfolio?: string;
   reputation?: number;
 }
+
+export interface IUserDoc extends IUser, Document {}
 
 // Nastepnie tworzymy schemat mongoose, który definiuje strukturę dokumentu w kolekcji "users". Schemat ten będzie używany do walidacji danych przed zapisaniem ich w bazie danych. W schemacie możemy określić typy danych, wymagane pola, unikalność pól itp.
 const UserSchema = new Schema<IUser>(
