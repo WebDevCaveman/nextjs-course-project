@@ -53,3 +53,12 @@ export const UserSchema = z.object({
   portfolio: z.url({ message: "Please provide a valid URL for the portfolio" }).optional(),
   reputation: z.number().optional(),
 });
+
+export const AccountSchema = z.object({
+  userId: z.string().min(1, { message: "User ID is required" }),
+  name: z.string().min(1, { message: "Name is required" }),
+  image: z.url({ message: "Please provide a valid URL for the image" }).optional(),
+  password: signUpSchema.shape.password.optional(),
+  provider: z.enum(["email", "google", "github"], { message: "Provider must be email, google or github" }),
+  providerAccountId: z.string().min(1, { message: "Provider account ID is required" }),
+});
