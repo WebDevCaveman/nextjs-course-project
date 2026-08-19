@@ -2,7 +2,7 @@ import handleError from "@/lib/handlers/error";
 import dbConnect from "@/lib/mongoose";
 import { NextResponse } from "next/server";
 import { AccountSchema } from "@/lib/validations";
-import { ForbiddenError, ValidationError } from "@/lib/http-errors";
+import { RequestError, ValidationError } from "@/lib/http-errors";
 import { flattenError } from "zod";
 import Account from "@/database/account.model";
 
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
       provider: validatedData.data.provider,
       providerAccountId: validatedData.data.providerAccountId,
     });
-    if (existingAccount) throw new ForbiddenError("Account with the same provider already exists");
+    if (existingAccount) throw new RequestError(409, "Account with the same provider already exists");
 
     const newAccount = await Account.create(validatedData.data);
     return NextResponse.json(
