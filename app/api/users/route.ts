@@ -3,14 +3,15 @@ import dbConnect from "@/lib/mongoose";
 import User from "@/database/user.model";
 import { NextResponse } from "next/server";
 import { UserSchema } from "@/lib/validations";
-import { ValidationError } from "@/lib/http-errors";
+import { RequestError, ValidationError } from "@/lib/http-errors";
 import { flattenError } from "zod";
 
-// W tym przypadku tworzymy sobie funkcje, ktore pozwolą nam pobierać wszystkich uytkowników z bazy danych. W tym przypadku używamy metody GET, która jest odpowiednia do pobierania danych. Funkcja ta łączy się z bazą danych, pobiera wszystkich użytkowników i zwraca ich w formacie JSON. W przypadku wystąpienia błędu, funkcja obsługuje go za pomocą funkcji handleError i zwraca odpowiedni komunikat o błędzie.
+// GET /api/users - Pobiera wszystkich użytkowników z bazy danych. W przypadku błędu w trakcie pobierania, zwraca odpowiedni komunikat o błędzie.
 export async function GET() {
   try {
     await dbConnect();
     const users = await User.find();
+
     return NextResponse.json(
       {
         success: true,
@@ -23,7 +24,7 @@ export async function GET() {
   }
 }
 
-// Teraz z kolei mając ju wszystkie zabezpieczenia moemy utworzyć nowego uzytkownika w bazie danych. W tym przypadku używamy metody POST, która jest odpowiednia do tworzenia nowych zasobów. Funkcja ta łączy się z bazą danych, tworzy nowego użytkownika na podstawie danych przesłanych w żądaniu i zwraca go w formacie JSON. W przypadku wystąpienia błędu, funkcja obsługuje go za pomocą funkcji handleError i zwraca odpowiedni komunikat o błędzie.
+// POST /api/users - Tworzy nowego użytkownika na podstawie danych przesłanych w żądaniu i zwraca go w formacie JSON. W przypadku błędu w trakcie tworzenia, zwraca odpowiedni komunikat o błędzie.
 export async function POST(req: Request) {
   try {
     await dbConnect();
@@ -37,10 +38,10 @@ export async function POST(req: Request) {
     const { email, username } = validatedData.data;
 
     const existingEmail = await User.findOne({ email });
-    if (existingEmail) throw new Error(`User with email ${email} already exists`);
+    if (existingEmail) throw new RequestError(409, `User with email ${email} already exists`);
 
     const existingUsername = await User.findOne({ username });
-    if (existingUsername) throw new Error(`User with username ${username} already exists`);
+    if (existingUsername) throw new RequestError(409, `User with username ${username} already exists`);
 
     const newUser = await User.create(validatedData.data);
     return NextResponse.json(
