@@ -27,7 +27,6 @@ export async function GET() {
 // POST /api/accounts - Tworzy nowe konto na podstawie danych przesłanych w żądaniu i zwraca je w formacie JSON. W przypadku błędu w trakcie tworzenia, zwraca odpowiedni komunikat o błędzie.
 export async function POST(req: Request) {
   try {
-    await dbConnect();
     const body = await req.json();
     const validatedData = AccountSchema.safeParse(body);
 
@@ -35,6 +34,7 @@ export async function POST(req: Request) {
       throw new ValidationError(flattenError(validatedData.error).fieldErrors);
     }
 
+    await dbConnect();
     const existingAccount = await Account.findOne({
       provider: validatedData.data.provider,
       providerAccountId: validatedData.data.providerAccountId,

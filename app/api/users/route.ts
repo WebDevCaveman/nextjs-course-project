@@ -27,7 +27,6 @@ export async function GET() {
 // POST /api/users - Tworzy nowego użytkownika na podstawie danych przesłanych w żądaniu i zwraca go w formacie JSON. W przypadku błędu w trakcie tworzenia, zwraca odpowiedni komunikat o błędzie.
 export async function POST(req: Request) {
   try {
-    await dbConnect();
     const body = await req.json();
     const validatedData = UserSchema.safeParse(body);
 
@@ -35,6 +34,7 @@ export async function POST(req: Request) {
       throw new ValidationError(flattenError(validatedData.error).fieldErrors);
     }
 
+    await dbConnect();
     const { email, username } = validatedData.data;
 
     const existingEmail = await User.findOne({ email });

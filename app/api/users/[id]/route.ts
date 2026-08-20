@@ -35,7 +35,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (!id) throw new NotFoundError("User");
 
   try {
-    await dbConnect();
     const body = await req.json();
 
     // W tym przypadku używamy metody partial() z biblioteki zod, która pozwala na walidacje tylko tych pól, które zostały przesłane w żądaniu. W ten sposób możemy aktualizować tylko te pola, które zostały przesłane w żądaniu, a pozostałe pola pozostają bez zmian.
@@ -46,6 +45,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       throw new ValidationError(flattenError(validatedData.error).fieldErrors);
     }
 
+    await dbConnect();
     // W tym przypadku używamy metody findByIdAndUpdate z biblioteki mongoose, która pozwala na aktualizacje dokumentu w bazie danych na podstawie jego ID. W tym przypadku przekazujemy do tej metody ID użytkownika, który ma zostać zaktualizowany, oraz dane, które mają zostać zaktualizowane. Dodatkowo przekazujemy opcję { new: true }, która powoduje, że metoda ta zwraca zaktualizowany dokument zamiast dokumentu przed aktualizacją.
     const updatedUser = await User.findByIdAndUpdate(id, validatedData.data, { new: true });
 

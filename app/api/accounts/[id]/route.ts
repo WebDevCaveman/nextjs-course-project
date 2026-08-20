@@ -33,7 +33,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (!id) throw new NotFoundError("Account");
 
   try {
-    await dbConnect();
     const body = await req.json();
     const validatedData = AccountSchema.partial().safeParse(body);
 
@@ -41,6 +40,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       throw new ValidationError(flattenError(validatedData.error).fieldErrors);
     }
 
+    await dbConnect();
     const updatedAccount = await Account.findByIdAndUpdate(id, validatedData.data, { new: true });
 
     if (!updatedAccount) throw new NotFoundError("Account");

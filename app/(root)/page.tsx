@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { filters } from "@/constants";
 import ROUTES from "@/constants/routes";
 import Link from "next/link";
+import handleError from "@/lib/handlers/error";
+import { api } from "@/lib/api";
 
 const questions: Question[] = [
   {
@@ -40,8 +42,17 @@ const questions: Question[] = [
 interface SearchParams {
   searchParams: Promise<{ [key: string]: string }>;
 }
+const test = async () => {
+  try {
+    return await api.users.getAll();
+  } catch (error) {
+    handleError(error);
+  }
+};
 
 const Home = async ({ searchParams }: SearchParams) => {
+  const users = await test();
+  console.log(users);
   // Zapis query = "" pozwala nam na ustawienie domyślnej wartości dla query, jeśli nie zostanie przekazana w URL. Dzięki temu unikamy błędów związanych z brakiem wartości i możemy bezpiecznie filtrować pytania. Czyli w przypadku braku wartości wyswietlimy cala domyslna liste pytań. W przeciwnym razie, jeśli query jest obecne, filtrowanie zostanie wykonane na podstawie jego wartości.
   const { query = "", filter } = await searchParams;
   const filteredQuestions = questions
