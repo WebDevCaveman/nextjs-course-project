@@ -9,6 +9,7 @@ const ROUTES = {
   SIGN_UP: "/sign-up",
   FORGOT_PASSWORD: "/forgot-password",
   PROFILE: "/profile",
+  SIGN_IN_WITH_OAUTH: "/signin-with-oauth",
 };
 
 export default ROUTES;

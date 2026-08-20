@@ -2,11 +2,19 @@
 import { IUser } from "@/database/user.model";
 import { IAccount } from "@/database/account.model";
 import { fetchHandler } from "./handlers/fetch";
-
+import type { SignInWithOAuthParams } from "@/types/action";
+import ROUTES from "@/constants/routes";
 // To rozwiazanie sprawi, ze na produkcji bedziemy mogli korzystać z naszego API, a w przypadku braku zmiennej środowiskowej NEXT_PUBLIC_API_BASE_URL, domyślnie zostanie użyty adres http://localhost:3000/api. Co oznacza, ze nie bedziemy musieli recznie zmieniac adresu API w kodzie, a jedynie ustawic odpowiednia zmienna środowiskowa w pliku .env.production lub w konfiguracji serwera. Dzieki temu nasze aplikacje beda bardziej elastyczne i łatwiejsze do wdrożenia w różnych środowiskach.
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3000/api";
 
 export const api = {
+  auth: {
+    signinWithOAuth: ({ provider, providerAccountId, user }: SignInWithOAuthParams) =>
+      fetchHandler(`${API_BASE_URL}/auth${ROUTES.SIGN_IN_WITH_OAUTH}`, {
+        method: "POST",
+        body: JSON.stringify({ provider, providerAccountId, user }),
+      }),
+  },
   users: {
     getAll: () => fetchHandler(`${API_BASE_URL}/users`),
     getById: (id: string) => fetchHandler(`${API_BASE_URL}/users/${id}`),
