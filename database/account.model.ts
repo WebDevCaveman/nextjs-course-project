@@ -1,6 +1,6 @@
 import { Schema, models, Types, model, Document } from "mongoose";
 
-const PROVIDERS = ["email", "google", "github"] as const;
+const PROVIDERS = ["credentials", "google", "github"] as const;
 
 export interface IAccount {
   userId: Types.ObjectId;

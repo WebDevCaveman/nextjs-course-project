@@ -1,15 +1,15 @@
 "use client";
 
 import AuthForm from "@/components/forms/AuthForm";
-import { forgotPasswordSchema } from "@/lib/validations";
+import { ForgotPasswordSchema } from "@/lib/validations";
 
 const ForgotPassword = () => {
   return (
     <AuthForm
       formType="FORGOT_PASSWORD"
-      schema={forgotPasswordSchema}
+      schema={ForgotPasswordSchema}
       defaultValues={{ email: "" }}
-      onSubmit={(data) => Promise.resolve({ success: true, data })}
+      onSubmit={() => Promise.resolve({ success: true })}
     />
   );
 };

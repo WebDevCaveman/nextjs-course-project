@@ -8,3 +8,10 @@ export interface SignInWithOAuthParams {
     image: string;
   };
 }
+
+export interface SignInWithCredentialsParams {
+  name: string;
+  username: string;
+  email: string;
+  password: string;
+}

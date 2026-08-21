@@ -1,15 +1,15 @@
 "use client";
-
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { Controller, useForm } from "react-hook-form";
 import type { DefaultValues, FieldValues, Path, SubmitHandler } from "react-hook-form";
 import type { ZodType } from "zod";
-
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import ROUTES from "@/constants/routes";
+import { toast } from "sonner";
 
 const COPY = {
   SIGN_IN: {
@@ -42,18 +42,25 @@ interface AuthFormTypes<T extends FieldValues> {
   formType: keyof typeof COPY;
   schema: ZodType<T, T>;
   defaultValues: T;
-  onSubmit: (data: T) => Promise<{ success: boolean; data: T }>;
+  onSubmit: (data: T) => Promise<ActionResponse>;
 }
 
 const AuthForm = <T extends FieldValues>({ formType, schema, defaultValues, onSubmit }: AuthFormTypes<T>) => {
+  const router = useRouter();
+
   const form = useForm<T>({
     resolver: zodResolver(schema),
     defaultValues: defaultValues as DefaultValues<T>,
   });
 
   const handleSubmit: SubmitHandler<T> = async (data) => {
-    // TODO: Authenticate User
-    await onSubmit(data);
+    const result = await onSubmit(data);
+    if (result.success) {
+      toast.success(`${formType === "SIGN_IN" ? "Signed in" : "Signed up"} successfully!`);
+      router.push(ROUTES.HOME);
+    } else {
+      toast.error(`${result?.error?.message ?? "An error occurred"}`);
+    }
   };
 
   const copy = COPY[formType];

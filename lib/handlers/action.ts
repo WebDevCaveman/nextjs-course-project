@@ -1,4 +1,3 @@
-"use server";
 import { flattenError, ZodError, type ZodType } from "zod";
 import { UnauthorizedError, ValidationError } from "../http-errors";
 import type { Session } from "next-auth";

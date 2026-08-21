@@ -4,7 +4,7 @@ import TagList from "@/components/tag-list/TagList";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { askQuestionSchema } from "@/lib/validations";
+import { AskQuestionSchema } from "@/lib/validations";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { useRef } from "react";
@@ -19,7 +19,7 @@ const Editor = dynamic(() => import("@/components/editor"), {
 
 const QuestionForm = () => {
   const form = useForm({
-    resolver: zodResolver(askQuestionSchema),
+    resolver: zodResolver(AskQuestionSchema),
     defaultValues: {
       title: "",
       content: "",
@@ -63,7 +63,7 @@ const QuestionForm = () => {
     );
   };
 
-  const handleCreateQuestion = (data: z.infer<typeof askQuestionSchema>) => {
+  const handleCreateQuestion = (data: z.infer<typeof AskQuestionSchema>) => {
     console.log(data);
   };
 

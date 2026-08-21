@@ -1,12 +1,47 @@
 import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
+import Credentials from "next-auth/providers/credentials";
 import { api } from "./lib/api";
 import { IAccountDoc } from "./database/account.model";
+import { SignInSchema } from "./lib/validations";
+import { IUserDoc } from "./database/user.model";
+import bcrypt from "bcryptjs";
 
 // Poniewaz mamy juz gotowa metode api.auth.signinWithOAuth w lib/api.ts, to mozemy teraz wykorzystac callbacks - czyli funkcje zwrotne, ktore wykonaja sie w momencie, gdy uzytkownik zostanie odpowiednio zalogowany z wykorzystaniem dowolnie zdefiniowanego przez nasz dostawcy
+// Do providers musimy dodac obiekt Credentials (odpowiedzialny za logowanie z email/password), ktory bedzie zawieral odpowiednie pola - w naszym przypadku email i password. Dodatkowo musimy zdefiniowac funkcje authorize, ktora bedzie odpowiedzialna za autoryzacje uzytkownika - czyli sprawdzenie czy podany email i haslo sa poprawne. Jesli tak to zwracamy obiekt uzytkownika, jesli nie to zwracamy null.
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  providers: [GitHub, Google],
+  providers: [
+    GitHub,
+    Google,
+    Credentials({
+      async authorize(credentials) {
+        const validatedFields = SignInSchema.safeParse(credentials);
+        if (validatedFields.success) {
+          const { email, password } = validatedFields.data;
+
+          const { data: existingAccount } = (await api.accounts.getByProvider(email)) as ActionResponse<IAccountDoc>;
+          if (!existingAccount) return null;
+
+          const { data: existingUser } = (await api.users.getById(
+            existingAccount.userId.toString()
+          )) as ActionResponse<IUserDoc>;
+          if (!existingUser) return null;
+
+          const isValidPassword = await bcrypt.compare(password, existingAccount.password!);
+          if (isValidPassword) {
+            return {
+              id: existingUser._id.toString(),
+              name: existingUser.name,
+              email: existingUser.email,
+              image: existingUser.image,
+            };
+          }
+        }
+        return null;
+      },
+    }),
+  ],
   callbacks: {
     async session({ session, token }) {
       session.user.id = token.sub as string;

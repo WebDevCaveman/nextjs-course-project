@@ -1,6 +1,6 @@
 import * as z from "zod";
 
-export const signInSchema = z.object({
+export const SignInSchema = z.object({
   email: z.email({ message: "Please provide a valid email address" }),
   password: z
     .string()
@@ -8,9 +8,9 @@ export const signInSchema = z.object({
     .max(24, { message: "Password must be at most 24 characters" }),
 });
 
-export const forgotPasswordSchema = signInSchema.pick({ email: true });
+export const ForgotPasswordSchema = SignInSchema.pick({ email: true });
 
-export const signUpSchema = signInSchema.extend({
+export const SignUpSchema = SignInSchema.extend({
   username: z
     .string()
     .min(3, { message: "Username must be at least 3 characters" })
@@ -31,7 +31,7 @@ export const signUpSchema = signInSchema.extend({
     .regex(/[^a-zA-Z0-9]/, { message: "Password must contain at least one special character" }),
 });
 
-export const askQuestionSchema = z.object({
+export const AskQuestionSchema = z.object({
   title: z
     .string()
     .min(5, { message: "Title is required" })
@@ -58,8 +58,8 @@ export const AccountSchema = z.object({
   userId: z.string().min(1, { message: "User ID is required" }),
   name: z.string().min(1, { message: "Name is required" }),
   image: z.url({ message: "Please provide a valid URL for the image" }).optional(),
-  password: signUpSchema.shape.password.optional(),
-  provider: z.enum(["email", "google", "github"], { message: "Provider must be email, google or github" }),
+  password: SignUpSchema.shape.password.optional(),
+  provider: z.enum(["credentials", "google", "github"], { message: "Provider must be credentials, google or github" }),
   providerAccountId: z.string().min(1, { message: "Provider account ID is required" }),
 });
 
