@@ -8,9 +8,8 @@ import { HugeIconSvg } from "@/components/icons/huge/HugeIconSvg";
 import ROUTES from "@/constants/routes";
 import { cn } from "@/lib/utils";
 
-const NavLinks = ({ isMobileNav = false }: { isMobileNav?: boolean }) => {
+const NavLinks = ({ isMobileNav = false, userId }: { isMobileNav?: boolean; userId?: string }) => {
   const pathname = usePathname();
-  const userId = "123"; // Replace with actual
 
   return (
     <nav className="flex flex-col gap-1">

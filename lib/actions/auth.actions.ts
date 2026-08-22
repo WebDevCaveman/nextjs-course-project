@@ -1,16 +1,17 @@
 "use server";
 
-import type { SignInWithCredentialsParams } from "@/types/action";
+import type { AuthCredentials } from "@/types/action";
 import action from "../handlers/action";
-import { SignUpSchema } from "../validations";
+import { SignInSchema, SignUpSchema } from "../validations";
 import handleError from "../handlers/error";
 import mongoose from "mongoose";
 import User, { IUserDoc } from "@/database/user.model";
 import bcrypt from "bcryptjs";
 import Account from "@/database/account.model";
 import { signIn } from "@/auth";
+import { NotFoundError, UnauthorizedError } from "../http-errors";
 
-export const signUpWithCredentials = async (params: SignInWithCredentialsParams): Promise<ActionResponse> => {
+export const signUpWithCredentials = async (params: AuthCredentials): Promise<ActionResponse> => {
   const validationResult = await action({ params, schema: SignUpSchema });
 
   if (validationResult instanceof Error) {
@@ -68,4 +69,37 @@ export const signUpWithCredentials = async (params: SignInWithCredentialsParams)
   });
 
   return { success: true };
+};
+
+export const signInWithCredentials = async (
+  params: Pick<AuthCredentials, "email" | "password">
+): Promise<ActionResponse> => {
+  const validationResult = await action({ params, schema: SignInSchema });
+
+  if (validationResult instanceof Error) {
+    return handleError(validationResult) as ErrorResponse;
+  }
+
+  const { email, password } = validationResult.params!;
+
+  try {
+    const existingUser = await User.findOne({ email });
+    if (!existingUser) throw new NotFoundError("User");
+
+    const existingAccount = await Account.findOne({ provider: "credentials", providerAccountId: email });
+    if (!existingAccount) throw new NotFoundError("Account");
+
+    const isValidPassword = await bcrypt.compare(password, existingAccount.password!);
+    if (!isValidPassword) throw new UnauthorizedError("Invalid password");
+
+    await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
+
+    return { success: true };
+  } catch (error) {
+    return handleError(error) as ErrorResponse;
+  }
 };

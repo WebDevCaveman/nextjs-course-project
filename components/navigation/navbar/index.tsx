@@ -1,11 +1,31 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Theme from "./Theme";
 import MobileNavigation from "./MobileNavigation";
+import { auth } from "@/auth";
+import ROUTES from "@/constants/routes";
 
-const Navbar = () => {
+const Navbar = async () => {
+  const session = await auth();
+  const userId = session?.user?.id;
+  const name = session?.user?.name;
+  const initials = name
+    ?.trim()
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const avatar = (
+    <Avatar className="border-line size-8.5 border">
+      <AvatarImage src={session?.user?.image ?? undefined} alt={name ?? "User avatar"} />
+      <AvatarFallback>{initials || "DF"}</AvatarFallback>
+    </Avatar>
+  );
+
   return (
     <header className="border-line bg-background sticky top-0 z-40 flex h-16 items-center justify-between gap-6 border-b px-6">
       <Link href="/" className="text-fg hover:text-fg flex items-center gap-2.5">
@@ -28,10 +48,14 @@ const Navbar = () => {
 
       <div className="flex items-center gap-3">
         <Theme />
-        <Avatar className="border-line size-8.5 border">
-          <AvatarFallback>DF</AvatarFallback>
-        </Avatar>
-        <MobileNavigation />
+        {userId ? (
+          <Link href={`${ROUTES.PROFILE}/${userId}`} aria-label="Your profile">
+            {avatar}
+          </Link>
+        ) : (
+          avatar
+        )}
+        <MobileNavigation userId={userId} />
       </div>
     </header>
   );

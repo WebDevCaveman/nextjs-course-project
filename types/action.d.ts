@@ -9,7 +9,7 @@ export interface SignInWithOAuthParams {
   };
 }
 
-export interface SignInWithCredentialsParams {
+export interface AuthCredentials {
   name: string;
   username: string;
   email: string;

@@ -14,8 +14,10 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import ROUTES from "@/constants/routes";
+import { signOut } from "@/auth";
+import LogOutButton from "./LogOutButton";
 
-const MobileNavigation = () => {
+const MobileNavigation = ({ userId }: { userId: string | undefined }) => {
   return (
     <Sheet>
       <SheetTrigger asChild className="md:hidden">
@@ -46,22 +48,36 @@ const MobileNavigation = () => {
         </SheetHeader>
 
         <div className="px-4">
-          <NavLinks isMobileNav />
+          <NavLinks isMobileNav userId={userId} />
         </div>
 
         <SheetFooter>
-          <Button asChild variant="soft">
-            <Link href={ROUTES.SIGN_IN}>
-              <HugeIcon name="interface/login" size={16} />
-              Log In
-            </Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href={ROUTES.SIGN_UP}>
-              <HugeIcon name="user/user-circle-add" size={16} />
-              Sign Up
-            </Link>
-          </Button>
+          {userId ? (
+            <LogOutButton
+              logOut={async () => {
+                "use server";
+                await signOut();
+              }}
+            >
+              <HugeIcon name="interface/logout" size={16} />
+              Log Out
+            </LogOutButton>
+          ) : (
+            <>
+              <Button asChild variant="soft">
+                <Link href={ROUTES.SIGN_IN}>
+                  <HugeIcon name="interface/login" size={16} />
+                  Log In
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href={ROUTES.SIGN_UP}>
+                  <HugeIcon name="user/user-circle-add" size={16} />
+                  Sign Up
+                </Link>
+              </Button>
+            </>
+          )}
         </SheetFooter>
       </SheetContent>
     </Sheet>
