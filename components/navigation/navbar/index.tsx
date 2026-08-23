@@ -49,7 +49,7 @@ const Navbar = async () => {
       <div className="flex items-center gap-3">
         <Theme />
         {userId ? (
-          <Link href={`${ROUTES.PROFILE}/${userId}`} aria-label="Your profile">
+          <Link href={ROUTES.PROFILE(userId)} aria-label="Your profile">
             {avatar}
           </Link>
         ) : (

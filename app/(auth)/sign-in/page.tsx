@@ -3,7 +3,7 @@
 import AuthForm from "@/components/forms/AuthForm";
 import SocialAuthForm from "@/components/forms/SocialAuthForm";
 import { SignInSchema } from "@/lib/validations";
-import { signInWithCredentials } from "@/lib/actions/auth.actions";
+import { signInWithCredentials } from "@/lib/actions/auth.action";
 
 const SignIn = () => {
   return (

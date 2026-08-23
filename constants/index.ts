@@ -7,7 +7,7 @@ export const links = [
   { href: ROUTES.COLLECTIONS, label: "Collections", icon: uiIcons.star },
   { href: ROUTES.JOBS, label: "Find Jobs", icon: uiIcons.briefcase },
   { href: ROUTES.TAGS, label: "Tags", icon: uiIcons.tag },
-  { href: ROUTES.PROFILE, label: "Profile", icon: uiIcons.users },
+  { href: ROUTES.PROFILE(), label: "Profile", icon: uiIcons.users },
   { href: ROUTES.ASK_QUESTION, label: "Ask a Question", icon: uiIcons.plus },
 ];
 

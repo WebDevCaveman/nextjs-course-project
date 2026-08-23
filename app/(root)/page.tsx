@@ -96,7 +96,11 @@ const Home = async ({ searchParams }: SearchParams) => {
           description="There are no questions matching this view yet. Be the first to ask one."
         />
       ) : (
-        filteredQuestions.map((question) => <QuestionCard key={question._id} {...question} />)
+        filteredQuestions.map((question) => (
+          <Link key={question._id} href={ROUTES.QUESTION(question._id)} className="text-fg hover:text-fg">
+            <QuestionCard {...question} />
+          </Link>
+        ))
       )}
     </>
   );

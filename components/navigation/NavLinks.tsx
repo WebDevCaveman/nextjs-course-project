@@ -15,8 +15,8 @@ const NavLinks = ({ isMobileNav = false, userId }: { isMobileNav?: boolean; user
     <nav className="flex flex-col gap-1">
       {links.map(({ href, label, icon }) => {
         const isActive = href === ROUTES.HOME ? pathname === href : pathname.startsWith(href);
-        if (href === ROUTES.PROFILE) {
-          if (userId) href = `${ROUTES.PROFILE}/${userId}`;
+        if (href === ROUTES.PROFILE()) {
+          if (userId) href = ROUTES.PROFILE(userId);
         }
 
         const link = (

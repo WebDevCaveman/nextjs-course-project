@@ -8,8 +8,9 @@ const ROUTES = {
   SIGN_IN: "/sign-in",
   SIGN_UP: "/sign-up",
   FORGOT_PASSWORD: "/forgot-password",
-  PROFILE: "/profile",
+  PROFILE: (id?: string) => (id ? `/profile/${id}` : "/profile"),
   SIGN_IN_WITH_OAUTH: "/signin-with-oauth",
+  QUESTION: (id: string) => `/questions/${id}`,
 };
 
 export default ROUTES;

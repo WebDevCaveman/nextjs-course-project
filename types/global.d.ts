@@ -1,3 +1,4 @@
+// Typy powiazane z baza danych
 interface Tag {
   _id: string;
   name: string;
@@ -32,6 +33,7 @@ type ActionResponse<T = null> = {
   status?: number;
 };
 
+// Typy powiazane z API
 type SuccessResponse<T = null> = ActionResponse<T> & { success: true };
 
 type ErrorResponse = ActionResponse<undefined> & { success: false };
@@ -39,3 +41,9 @@ type ErrorResponse = ActionResponse<undefined> & { success: false };
 type APIErrorResponse = NextResponse<ErrorResponse>;
 
 type APIResponse<T = null> = NextResponse<SuccessResponse<T> | ErrorResponse>;
+
+// Typ powiazany z parametrami, ktore wykorzystujemy w komponentach dla stron dynamicznych
+type RouteParams = {
+  params: Promise<Record<string, string>>;
+  searchParams: Promise<Record<string, string>>;
+};

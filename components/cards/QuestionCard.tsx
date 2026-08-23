@@ -6,12 +6,12 @@ import { formatRelativeTime } from "@/lib/time";
 const QuestionCard = ({ title, tags, author, createdAt, votes, answers, views }: Question) => {
   return (
     <article className="border-line bg-background shadow-card hover:border-accent-solid flex flex-col gap-6 rounded-xl border p-5 md:p-9">
-      <h2>{title}</h2>
+      <h2 className="hover:text-accent-solid">{title}</h2>
 
       <TagList tags={tags} inline />
 
       <footer className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-1.5">
+        <div className="hover:text-accent-solid flex items-center gap-1.5">
           <Avatar size="xs">
             <AvatarImage src={author.image} alt={author.name} />
             <AvatarFallback>{author.name.charAt(0)}</AvatarFallback>
