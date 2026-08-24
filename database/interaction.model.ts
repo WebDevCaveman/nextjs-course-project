@@ -1,4 +1,4 @@
-import { Schema, models, model, Types, Document } from "mongoose";
+import { Schema, models, model, Types, Document, Model } from "mongoose";
 
 export const INTERACTIONS = ["view", "upvote", "downvote", "bookmark", "post", "edit", "delete", "search"] as const;
 
@@ -25,6 +25,6 @@ const InteractionSchema = new Schema<IInteraction>(
   { timestamps: true }
 );
 
-const Interaction = models?.Interaction || model<IInteraction>("Interaction", InteractionSchema);
+const Interaction: Model<IInteraction> = models?.Interaction || model<IInteraction>("Interaction", InteractionSchema);
 
 export default Interaction;

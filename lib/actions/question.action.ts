@@ -11,16 +11,17 @@
 
 import { CreateQuestionParams, EditQuestionParams, GetQuestionParams } from "@/types/action";
 import handleError from "../handlers/error";
-import { AskQuestionSchema, EditQuestionSchema, GetQuestionSchema } from "../validations";
+import { AskQuestionSchema, EditQuestionSchema, GetQuestionSchema, PaginatedSearchParamsSchema } from "../validations";
 import action from "../handlers/action";
-import mongoose from "mongoose";
-import Question, { IQuestionDoc } from "@/database/question.model";
+import mongoose, { QueryFilter } from "mongoose";
+import Question, { IQuestion } from "@/database/question.model";
 import Tag, { ITagDoc } from "@/database/tag.model";
-import User, { IUserDoc } from "@/database/user.model";
+import { IUserDoc } from "@/database/user.model";
 import TagQuestion from "@/database/tag-question.model";
 import { NotFoundError, UnauthorizedError } from "../http-errors";
+import { escapeRegExp } from "../utils";
 
-export const createQuestion = async (params: CreateQuestionParams): Promise<ActionResponse<IQuestionDoc>> => {
+export const createQuestion = async (params: CreateQuestionParams): Promise<ActionResponse<Question>> => {
   const validationResult = await action({ params, schema: AskQuestionSchema, authorize: true });
 
   if (validationResult instanceof Error) {
@@ -32,10 +33,9 @@ export const createQuestion = async (params: CreateQuestionParams): Promise<Acti
 
   const session = await mongoose.startSession();
   session.startTransaction();
-  let question: IQuestionDoc | null = null;
 
   try {
-    question = (
+    const question = (
       await Question.create(
         [
           {
@@ -59,7 +59,7 @@ export const createQuestion = async (params: CreateQuestionParams): Promise<Acti
       // nigdy nie jest nullem, wiec nie ma tu dwoch osobnych sciezek do rozdzielenia.
       // $inc - operator w MongoDB, który pozwala na zwiększenie wartości pola o określoną liczbę. W tym przypadku używamy go do zwiększenia licznika pytań dla danego tagu o 1.
       const upsertedTag = await Tag.findOneAndUpdate(
-        { name: { $regex: new RegExp(`^${tag.toLowerCase()}$`, "i") } },
+        { name: { $regex: new RegExp(`^${escapeRegExp(tag.toLowerCase())}$`, "i") } },
         { $setOnInsert: { name: tag }, $inc: { questions: 1 } },
         { upsert: true, new: true, session }
       );
@@ -72,17 +72,17 @@ export const createQuestion = async (params: CreateQuestionParams): Promise<Acti
     await Question.findByIdAndUpdate(question._id, { $set: { tags: tagIds } }, { session });
 
     await session.commitTransaction();
+
+    return { success: true, data: JSON.parse(JSON.stringify(question)) };
   } catch (error) {
     await session.abortTransaction();
     return handleError(error) as ErrorResponse;
   } finally {
     await session.endSession();
   }
-
-  return { success: true, data: JSON.parse(JSON.stringify(question)) };
 };
 
-export const editQuestion = async (params: EditQuestionParams): Promise<ActionResponse<IQuestionDoc>> => {
+export const editQuestion = async (params: EditQuestionParams): Promise<ActionResponse<Question>> => {
   const validationResult = await action({ params, schema: EditQuestionSchema, authorize: true });
 
   if (validationResult instanceof Error) {
@@ -94,25 +94,21 @@ export const editQuestion = async (params: EditQuestionParams): Promise<ActionRe
 
   const session = await mongoose.startSession();
   session.startTransaction();
-  //  IQuestionDoc & { tags: ITagDoc[] } to przecięcie, więc tags dostawało typ Types.ObjectId[] & ITagDoc[]. Przy wywołaniu .some() TS wybiera pierwszą pasującą sygnaturę — tę z ObjectId[] — i parametr t lądował jako ObjectId. Omit najpierw wycina stare tags, więc nie ma z czym się przecinać i zostaje samo ITagDoc[].
-  let question: (Omit<IQuestionDoc, "tags"> & { tags: ITagDoc[] }) | null = null;
 
   try {
     // Poniewaz tylko wyszukujemy element to nie musimy dodawac session do findById, bo nie jest to operacja modyfikujaca baze danych. Ale w przypadku update musimy dodac session, bo chcemy aby wszystkie operacje byly w ramach jednej transakcji.
     // Bez populate: tags: [ObjectId("..."), ObjectId("...")]. Z populate: tags: [{ _id, name: "react", questions: 12 }, ...] — czyli mamy od razu question.tags[0].name.
-    question = await Question.findById(questionId).populate<{ tags: ITagDoc[] }>("tags");
+    const question = await Question.findById(questionId).populate<{ tags: ITagDoc[] }>("tags");
 
     if (!question) throw new NotFoundError("Question");
 
     if (question.author.toString() !== userId)
       throw new UnauthorizedError("You are not authorized to edit this question");
 
-    if (question.title !== title || question.content !== content) {
-      question.title = title;
-      question.content = content;
-    }
+    question.title = title;
+    question.content = content;
 
-    const tagsToAdd = tags.filter((tag) => !question!.tags.some((t) => t.name.toLowerCase() === tag.toLowerCase()));
+    const tagsToAdd = tags.filter((tag) => !question.tags.some((t) => t.name.toLowerCase() === tag.toLowerCase()));
     const tagsToRemove = question.tags.filter((t) => !tags.some((tag) => tag.toLowerCase() === t.name.toLowerCase()));
 
     const newTagDocuments = [];
@@ -120,7 +116,7 @@ export const editQuestion = async (params: EditQuestionParams): Promise<ActionRe
     if (tagsToAdd.length > 0) {
       for (const tag of tagsToAdd) {
         const existingTag = await Tag.findOneAndUpdate(
-          { name: { $regex: new RegExp(`^${tag.toLowerCase()}$`, "i") } },
+          { name: { $regex: new RegExp(`^${escapeRegExp(tag.toLowerCase())}$`, "i") } },
           { $setOnInsert: { name: tag }, $inc: { questions: 1 } },
           { upsert: true, new: true, session }
         );
@@ -148,14 +144,14 @@ export const editQuestion = async (params: EditQuestionParams): Promise<ActionRe
     await question.save({ session });
 
     await session.commitTransaction();
+
+    return { success: true, data: JSON.parse(JSON.stringify(question)) };
   } catch (error) {
     await session.abortTransaction();
     return handleError(error) as ErrorResponse;
   } finally {
     await session.endSession();
   }
-
-  return { success: true, data: JSON.parse(JSON.stringify(question)) };
 };
 
 // Tu musimy zwrocic uwage na jeden fakt - czyli jak wywolywane są Server Actions w zaleznosci od kontekstu:
@@ -171,14 +167,70 @@ export const getQuestion = async (params: GetQuestionParams): Promise<ActionResp
   const { questionId } = validationResult.params!;
 
   try {
-    const question = await Question.findById(questionId).populate<{ tags: ITagDoc[]; author: IUserDoc }>([
-      { path: "tags", model: Tag },
-      { path: "author", model: User, select: "_id name image" },
-    ]);
+    const question = await Question.findById(questionId)
+      .populate<{ tags: ITagDoc[] }>("tags")
+      .populate<{ author: IUserDoc }>("author", "name image");
 
     if (!question) throw new NotFoundError("Question");
 
     return { success: true, data: JSON.parse(JSON.stringify(question)) };
+  } catch (error) {
+    return handleError(error) as ErrorResponse;
+  }
+};
+
+export const getQuestions = async (
+  params: PaginatedSearchParams
+): Promise<ActionResponse<{ questions: Question[]; isNext: boolean }>> => {
+  const validationResult = await action({ params, schema: PaginatedSearchParamsSchema });
+
+  if (validationResult instanceof Error) {
+    return handleError(validationResult) as ErrorResponse;
+  }
+
+  const { page = 1, pageSize = 10, query, filter } = validationResult.params!;
+  const filterQuery: QueryFilter<IQuestion> = {};
+  const skip = (page - 1) * pageSize;
+
+  if (filter === "recommended") {
+    return { success: true, data: { questions: [], isNext: false } }; // Placeholder for recommended questions logic
+  }
+
+  if (query) {
+    const search = escapeRegExp(query);
+    filterQuery.$or = [{ title: { $regex: search, $options: "i" } }, { content: { $regex: search, $options: "i" } }];
+  }
+
+  let sortCriteria = {};
+
+  switch (filter) {
+    case "newest":
+      sortCriteria = { createdAt: -1 };
+      break;
+    case "frequent":
+      sortCriteria = { answers: -1 };
+      break;
+    case "unanswered":
+      filterQuery.answers = 0;
+      sortCriteria = { createdAt: -1 };
+      break;
+    default:
+      sortCriteria = { createdAt: -1 };
+  }
+
+  try {
+    const totalQuestions = await Question.countDocuments(filterQuery);
+    const questions = await Question.find(filterQuery)
+      .populate("tags", "name")
+      .populate("author", "name image")
+      .lean()
+      .sort(sortCriteria)
+      .skip(skip)
+      .limit(pageSize);
+
+    const isNext = totalQuestions > skip + questions.length;
+
+    return { success: true, data: { questions: JSON.parse(JSON.stringify(questions)), isNext } };
   } catch (error) {
     return handleError(error) as ErrorResponse;
   }

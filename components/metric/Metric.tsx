@@ -2,11 +2,12 @@ import { HugeIcon, type HugeIconName } from "@/components/icons/huge";
 
 interface MetricProps {
   number: number;
-  type: "votes" | "answers" | "views";
+  type: "upvotes" | "downvotes" | "answers" | "views";
 }
 
 const data: Record<MetricProps["type"], { icon: HugeIconName; label: string }> = {
-  votes: { icon: "arrows/up-arrow-01", label: "Votes" },
+  upvotes: { icon: "arrows/up-arrow-01", label: "Upvotes" },
+  downvotes: { icon: "arrows/down-arrow-01", label: "Downvotes" },
   answers: { icon: "communication/chat-01", label: "Answers" },
   views: { icon: "interface/eye", label: "Views" },
 };

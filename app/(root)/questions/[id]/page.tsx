@@ -40,7 +40,8 @@ const QuestionDetails = async ({ params }: RouteParams) => {
             <HugeIcon name="interface/clock-circle" size={16} className="text-accent-solid" />
             Asked {formatRelativeTime(question.createdAt)}
           </span>
-          <Metric number={question.upvotes - question.downvotes} type="votes" />
+          <Metric number={question.upvotes} type="upvotes" />
+          <Metric number={question.downvotes} type="downvotes" />
           <Metric number={question.answers} type="answers" />
           <Metric number={question.views} type="views" />
         </div>

@@ -1,6 +1,9 @@
 import mongoose, { Mongoose } from "mongoose";
 import logger from "./logger";
 
+// To pozwoli nam zaimportowac wszystkie zdefiniowane przez nas modele w bazie danych, aby byly one dostepne w kodzie. W MongoDB modele sa ladowane dopiero wtedy, gdy zostana uzyte w kodzie, dlatego importujemy je tutaj, aby uniknac problemow z ich niedostepnoscia.
+import "@/database";
+
 const MONGODB_URI = process.env.MONGODB_URI as string;
 
 if (!MONGODB_URI) {

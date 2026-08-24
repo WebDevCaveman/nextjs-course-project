@@ -1,4 +1,4 @@
-import { Schema, models, Types, model, Document } from "mongoose";
+import { Schema, models, Types, model, Document, Model } from "mongoose";
 
 const PROVIDERS = ["credentials", "google", "github"] as const;
 
@@ -44,6 +44,6 @@ const AccountSchema = new Schema<IAccount>(
   { timestamps: true }
 );
 
-const Account = models?.Account || model<IAccount>("Account", AccountSchema);
+const Account: Model<IAccount> = models?.Account || model<IAccount>("Account", AccountSchema);
 
 export default Account;

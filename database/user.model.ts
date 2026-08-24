@@ -1,4 +1,4 @@
-import { Schema, models, model, Document } from "mongoose";
+import { Schema, models, model, Document, Model } from "mongoose";
 
 // Poniewaz mongoose wspiera TS to najpierw trzeba stworzyć interfejs, który będzie reprezentował strukturę dokumentu w kolekcji "users". Interfejs ten będzie używany do typowania danych w aplikacji, co pozwoli na lepszą kontrolę nad danymi i uniknięcie błędów typów.
 export interface IUser {
@@ -51,6 +51,6 @@ const UserSchema = new Schema<IUser>(
 );
 
 // Tworzymy model mongoose na podstawie schematu. Model ten będzie używany do interakcji z kolekcją "users" w bazie danych. Model pozwala na tworzenie, odczytywanie, aktualizowanie i usuwanie dokumentów w kolekcji. Tu używamy warunku, aby sprawdzić, czy model już istnieje (co jest przydatne w środowisku deweloperskim z hot reloadingiem), jeśli nie, tworzymy nowy model.
-const User = models?.User || model<IUser>("User", UserSchema);
+const User: Model<IUser> = models?.User || model<IUser>("User", UserSchema);
 
 export default User;

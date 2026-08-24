@@ -17,9 +17,11 @@ type ActionOptions<T> = {
 // - Laczy sie z baza danych za pomoca dbConnect().
 // - Zwraca obiekt zawierajacy params i session (jesli authorize jest true).
 const action = async <T>({ params, schema, authorize = false }: ActionOptions<T>) => {
+  let validatedParams = params;
+
   if (schema) {
     try {
-      schema.parse(params);
+      validatedParams = schema.parse(params);
     } catch (error) {
       if (error instanceof ZodError) {
         return new ValidationError(flattenError(error).fieldErrors as Record<string, string[]>);
@@ -41,7 +43,7 @@ const action = async <T>({ params, schema, authorize = false }: ActionOptions<T>
 
   await dbConnect();
 
-  return { params, session };
+  return { params: validatedParams, session };
 };
 
 export default action;
