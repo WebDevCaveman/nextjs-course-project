@@ -221,8 +221,8 @@ export const getQuestions = async (
   try {
     const totalQuestions = await Question.countDocuments(filterQuery);
     const questions = await Question.find(filterQuery)
-      .populate("tags", "name")
-      .populate("author", "name image")
+      .populate<{ tags: ITagDoc[] }>("tags", "name")
+      .populate<{ author: IUserDoc }>("author", "name image")
       .lean()
       .sort(sortCriteria)
       .skip(skip)
