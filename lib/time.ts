@@ -10,8 +10,8 @@ const DIVISIONS: { amount: number; unit: Intl.RelativeTimeFormatUnit }[] = [
 
 const rtf = new Intl.RelativeTimeFormat("en", { numeric: "always" });
 
-export function formatRelativeTime(date: Date) {
-  let duration = (date.getTime() - Date.now()) / 1000;
+export function formatRelativeTime(date: Date | string) {
+  let duration = (new Date(date).getTime() - Date.now()) / 1000;
 
   for (const division of DIVISIONS) {
     if (Math.abs(duration) < division.amount) {

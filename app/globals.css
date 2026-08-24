@@ -203,6 +203,62 @@
     @apply bg-transparent p-0;
   }
 
+  /* Syntax highlighting for markdown code blocks — rehype-highlight emits highlight.js
+     token classes, and this is the palette they resolve against. Semantic tokens only,
+     so both themes follow automatically (--color-info is blue-600 light, blue-400 dark). */
+  .hljs-comment,
+  .hljs-quote {
+    @apply text-fg-subtle italic;
+  }
+  .hljs-keyword,
+  .hljs-literal,
+  .hljs-selector-tag,
+  .hljs-doctag,
+  .hljs-meta .hljs-keyword {
+    @apply text-info;
+  }
+  .hljs-string,
+  .hljs-regexp,
+  .hljs-char,
+  .hljs-addition,
+  .hljs-attribute,
+  .hljs-meta .hljs-string {
+    @apply text-success;
+  }
+  .hljs-number,
+  .hljs-symbol,
+  .hljs-bullet,
+  .hljs-link,
+  .hljs-meta {
+    @apply text-warning;
+  }
+  .hljs-title,
+  .hljs-section,
+  .hljs-name,
+  .hljs-tag,
+  .hljs-type,
+  .hljs-built_in,
+  .hljs-class,
+  .hljs-attr,
+  .hljs-property,
+  .hljs-variable,
+  .hljs-template-variable,
+  .hljs-selector-class,
+  .hljs-selector-id,
+  .hljs-selector-attr,
+  .hljs-selector-pseudo {
+    @apply text-accent-solid;
+  }
+  .hljs-deletion {
+    @apply text-danger;
+  }
+  .hljs-emphasis {
+    @apply italic;
+  }
+  .hljs-strong {
+    @apply font-semibold;
+  }
+
   ul,
   ol {
     @apply text-fg-muted flex flex-col gap-2 pl-5 text-base;

@@ -40,7 +40,22 @@ export const AskQuestionSchema = z.object({
   tags: z
     .array(z.string().min(1, { message: "Tag is required" }).max(15, { message: "Title cannot exceed 15 characters" }))
     .min(1, { message: "At least one tag is required" })
-    .max(3, { message: "Cannot add more than 3 tags" }),
+    .max(3, { message: "Cannot add more than 3 tags" })
+    // Normalizujemy nazwy tagów do małych liter i odsiewamy duplikaty ("react" i "React" to ten
+    // sam tag). To jedyne miejsce, w którym wymuszamy tę regułę — createQuestion i editQuestion
+    // dostają już znormalizowaną tablicę, więc ich $setOnInsert zapisuje do bazy małe litery bez
+    // dodatkowego toLowerCase(). Formularz pilnuje duplikatów po stronie klienta, ale server
+    // action to granica zaufania: bez tego ręcznie wysłane ["react", "React"] podbiłoby licznik
+    // Tag.questions o 2 i utworzyłoby dwa wpisy TagQuestion dla jednego tagu.
+    .transform((tags) => [...new Set(tags.map((tag) => tag.toLowerCase()))]),
+});
+
+export const EditQuestionSchema = AskQuestionSchema.extend({
+  questionId: z.string().min(1, { message: "Question ID is required" }),
+});
+
+export const GetQuestionSchema = z.object({
+  questionId: z.string().min(1, { message: "Question ID is required" }),
 });
 
 export const UserSchema = z.object({

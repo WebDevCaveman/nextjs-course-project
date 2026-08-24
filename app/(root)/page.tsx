@@ -13,26 +13,30 @@ const questions: Question[] = [
   {
     _id: "1",
     title: "How to center a div?",
+    content: "Probowalem flexboxa i grida, ale element caly czas trzyma sie lewej krawedzi kontenera.",
     tags: [
       { _id: "css", name: "css" },
       { _id: "html", name: "html" },
     ],
     author: { _id: "1", name: "Krzysztof" },
-    createdAt: new Date("2023-01-01"),
-    votes: 10,
+    createdAt: "2023-01-01T00:00:00.000Z",
+    upvotes: 12,
+    downvotes: 2,
     answers: 2,
     views: 100,
   },
   {
     _id: "2",
     title: "How to use React Query?",
+    content: "Nie wiem, kiedy siegac po useQuery, a kiedy po useMutation przy zapisie formularza.",
     tags: [
       { _id: "react", name: "react" },
       { _id: "typescript", name: "typescript" },
     ],
     author: { _id: "2", name: "Anna" },
-    createdAt: new Date("2023-01-02"),
-    votes: 24,
+    createdAt: "2023-01-02T00:00:00.000Z",
+    upvotes: 25,
+    downvotes: 1,
     answers: 1,
     views: 42,
   },
@@ -63,9 +67,9 @@ const Home = async ({ searchParams }: SearchParams) => {
     .sort((a, b) => {
       switch (filter) {
         case filters[0].value:
-          return b.createdAt.getTime() - a.createdAt.getTime();
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         case filters[1].value:
-          return b.votes - a.votes;
+          return b.upvotes - b.downvotes - (a.upvotes - a.downvotes);
         case filters[2].value:
           return b.answers - a.answers;
         default:

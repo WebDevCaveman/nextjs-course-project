@@ -11,7 +11,7 @@ import { useRef, useTransition } from "react";
 import { MDXEditorMethods } from "@mdxeditor/editor";
 import dynamic from "next/dynamic";
 import * as z from "zod";
-import { createQuestion } from "@/lib/actions/question.action";
+import { createQuestion, editQuestion } from "@/lib/actions/question.action";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import ROUTES from "@/constants/routes";
@@ -21,16 +21,21 @@ const Editor = dynamic(() => import("@/components/editor"), {
   ssr: false,
 });
 
-const QuestionForm = () => {
+type QuestionFormProps = {
+  question?: Question;
+  isEdit?: boolean;
+};
+
+const QuestionForm = ({ question, isEdit }: QuestionFormProps) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   const form = useForm({
     resolver: zodResolver(AskQuestionSchema),
     defaultValues: {
-      title: "",
-      content: "",
-      tags: [] as string[],
+      title: question?.title || "",
+      content: question?.content || "",
+      tags: question?.tags.map((tag) => tag.name) || ([] as string[]),
     },
   });
 
@@ -73,10 +78,24 @@ const QuestionForm = () => {
   const handleCreateQuestion = async (data: z.infer<typeof AskQuestionSchema>) => {
     // Jeśli ubierzemy to w startTransition, to nie będziemy blokować UI i będzie to działać w tle, a my potem mozemy uzyc isPending, zeby wylaczyc button submit i pokazac odpowiedni text. Jest to dobre podejscie bo mamy pewnosc, ze stan isPending bedzie trwal tak dlugo, az cala nasza akcja sie nie wykona, czyli u nas az do momentu utworzenia calego pytania.
     startTransition(async () => {
+      if (isEdit && question) {
+        const result = await editQuestion({ questionId: question._id, ...data });
+
+        if (result.success) {
+          toast.success(`Question updated successfully!`);
+          form.reset();
+          router.push(ROUTES.QUESTION(result.data!._id.toString()));
+        } else {
+          toast.error(result.error?.message || "Failed to update question. Please try again.");
+        }
+
+        return; // Exit the function early if we're editing
+      }
+
       const result = await createQuestion(data);
 
       if (result.success) {
-        toast.success("Question created successfully!");
+        toast.success(`Question created successfully!`);
         form.reset();
         router.push(ROUTES.QUESTION(result.data!._id.toString()));
       } else {
@@ -144,7 +163,7 @@ const QuestionForm = () => {
       </FieldGroup>
 
       <Button type="submit" variant="cta" size="cta" className="self-end" disabled={isPending}>
-        {isPending ? "Submitting..." : "Ask a Question"}
+        {isPending ? "Submitting..." : isEdit ? "Update Question" : "Ask Question"}
       </Button>
     </form>
   );

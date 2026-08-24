@@ -3,7 +3,7 @@ import TagList from "@/components/tag-list/TagList";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatRelativeTime } from "@/lib/time";
 
-const QuestionCard = ({ title, tags, author, createdAt, votes, answers, views }: Question) => {
+const QuestionCard = ({ title, tags, author, createdAt, upvotes, downvotes, answers, views }: Question) => {
   return (
     <article className="border-line bg-background shadow-card hover:border-accent-solid flex flex-col gap-6 rounded-xl border p-5 md:p-9">
       <h2 className="hover:text-accent-solid">{title}</h2>
@@ -21,7 +21,7 @@ const QuestionCard = ({ title, tags, author, createdAt, votes, answers, views }:
         </div>
 
         <div className="text-fg-subtle flex items-center gap-4 text-sm">
-          <Metric number={votes} type="votes" />
+          <Metric number={upvotes - downvotes} type="votes" />
           <Metric number={answers} type="answers" />
           <Metric number={views} type="views" />
         </div>
