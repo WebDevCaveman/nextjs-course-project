@@ -223,10 +223,10 @@ export const getQuestions = async (
     const questions = await Question.find(filterQuery)
       .populate<{ tags: ITagDoc[] }>("tags", "name")
       .populate<{ author: IUserDoc }>("author", "name image")
-      .lean()
       .sort(sortCriteria)
       .skip(skip)
-      .limit(pageSize);
+      .limit(pageSize)
+      .lean();
 
     const isNext = totalQuestions > skip + questions.length;
 

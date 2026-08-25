@@ -1,12 +1,15 @@
 "use client";
 
-import { filters } from "@/constants";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formUrlQuery, removeKeysFromUrlQuery } from "@/lib/url";
 import { cn } from "@/lib/utils";
 
-const HomeFilter = () => {
+interface PageFilterProps {
+  filters: { name: string; value: string }[];
+}
+
+const PageFilter = ({ filters }: PageFilterProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const filterParams = searchParams.get("filter");
@@ -46,4 +49,4 @@ const HomeFilter = () => {
   );
 };
 
-export default HomeFilter;
+export default PageFilter;

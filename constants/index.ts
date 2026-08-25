@@ -11,9 +11,17 @@ export const links = [
   { href: ROUTES.ASK_QUESTION, label: "Ask a Question", icon: uiIcons.plus },
 ];
 
-export const filters = [
+export const homeFilters = [
   { name: "Newest", value: "newest" },
   { name: "Recommended", value: "recommended" },
   { name: "Frequent", value: "frequent" },
   { name: "Unanswered", value: "unanswered" },
+];
+
+export const tagsFilters = [
+  { name: "Popular", value: "popular" },
+  { name: "Recent", value: "recent" },
+  { name: "Oldest", value: "oldest" },
+  { name: "Name ASC", value: "name_asc" },
+  { name: "Name DESC", value: "name_desc" },
 ];

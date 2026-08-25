@@ -1,6 +1,6 @@
 import QuestionCard from "@/components/cards/QuestionCard";
 import { HugeIcon } from "@/components/icons/huge";
-import HomeFilter from "@/components/filters/HomeFilter";
+import PageFilter from "@/components/filters/PageFilter";
 import LocalSearch from "@/components/search/LocalSearch";
 import { Button } from "@/components/ui/button";
 import ROUTES from "@/constants/routes";
@@ -8,6 +8,7 @@ import Link from "next/link";
 import { getQuestions } from "@/lib/actions/question.action";
 import { DataRenderer } from "@/components/DataRenderer";
 import { EMPTY_QUESTIONS } from "@/constants/states";
+import { homeFilters } from "@/constants";
 
 interface SearchParams {
   searchParams: Promise<{ [key: string]: string }>;
@@ -38,7 +39,7 @@ const Home = async ({ searchParams }: SearchParams) => {
 
       <LocalSearch route="/" iconName="search" placeholder="Search questions..." otherClasses="" />
 
-      <HomeFilter />
+      <PageFilter filters={homeFilters} />
 
       <DataRenderer
         success={success}

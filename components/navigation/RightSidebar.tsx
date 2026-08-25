@@ -12,14 +12,14 @@ const hotQuestions = [
 ];
 
 const popularTags: Tag[] = [
-  { _id: "react", name: "react", count: "18,209" },
-  { _id: "javascript", name: "javascript", count: "15,730" },
-  { _id: "typescript", name: "typescript", count: "12,486" },
-  { _id: "nodejs", name: "nodejs", count: "9,041" },
-  { _id: "python", name: "python", count: "7,552" },
-  { _id: "tailwindcss", name: "tailwindcss", count: "5,318" },
-  { _id: "docker", name: "docker", count: "4,127" },
-  { _id: "postgresql", name: "postgresql", count: "3,864" },
+  { _id: "react", name: "react", questions: "18,209" },
+  { _id: "javascript", name: "javascript", questions: "15,730" },
+  { _id: "typescript", name: "typescript", questions: "12,486" },
+  { _id: "nodejs", name: "nodejs", questions: "9,041" },
+  { _id: "python", name: "python", questions: "7,552" },
+  { _id: "tailwindcss", name: "tailwindcss", questions: "5,318" },
+  { _id: "docker", name: "docker", questions: "4,127" },
+  { _id: "postgresql", name: "postgresql", questions: "3,864" },
 ];
 
 const RightSidebar = () => {

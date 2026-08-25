@@ -17,7 +17,7 @@ const TagList = ({
 }) => {
   return (
     <ul className={cn("flex list-none pl-0", inline ? "flex-row flex-wrap gap-2" : "flex-col gap-3.5")}>
-      {tags.map(({ _id, name, count }) => {
+      {tags.map(({ _id, name, questions }) => {
         const icon = tagIcon(name);
 
         const chip = (
@@ -42,7 +42,9 @@ const TagList = ({
             {/* Chipy usuwalne zostaja bez linku: maja w srodku <button>, a ich _id to nazwa tagu
                 wpisana w formularzu, nie identyfikator z bazy. */}
             {onRemove ? chip : <Link href={ROUTES.TAG(_id)}>{chip}</Link>}
-            {count !== undefined && <span className="text-fg-subtle ml-auto text-sm tabular-nums">{count}</span>}
+            {questions !== undefined && (
+              <span className="text-fg-subtle ml-auto text-sm tabular-nums">{questions}</span>
+            )}
           </li>
         );
       })}

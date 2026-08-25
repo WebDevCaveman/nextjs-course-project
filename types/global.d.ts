@@ -2,8 +2,8 @@
 interface Tag {
   _id: string;
   name: string;
-  /** Omit to drop the count entirely. */
-  count?: string | number;
+  questions?: string | number;
+  description?: string;
 }
 
 interface Author {
