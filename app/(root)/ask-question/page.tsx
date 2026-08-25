@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
-import Blockade from "@/components/blockade/Blockade";
+import { StateSkeleton } from "@/components/DataRenderer";
 import QuestionForm from "@/components/forms/QuestionForm";
+import { DEFAULT_DENIED } from "@/constants/states";
 
 const AskQuestion = async () => {
   const session = await auth();
@@ -9,15 +10,7 @@ const AskQuestion = async () => {
   return (
     <>
       <h1>Ask a Question</h1>
-      {userId ? (
-        <QuestionForm />
-      ) : (
-        <Blockade
-          image="permission-denied"
-          title="Sign in to ask a question"
-          description={"You need an account to post a question.\nSign in or create one — it only takes a minute."}
-        />
-      )}
+      {userId ? <QuestionForm /> : <StateSkeleton {...DEFAULT_DENIED} />}
     </>
   );
 };

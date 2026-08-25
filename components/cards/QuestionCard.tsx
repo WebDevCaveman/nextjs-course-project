@@ -2,11 +2,17 @@ import Metric from "@/components/metric/Metric";
 import TagList from "@/components/tag-list/TagList";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatRelativeTime } from "@/lib/time";
+import ROUTES from "@/constants/routes";
+import Link from "next/link";
 
-const QuestionCard = ({ title, tags, author, createdAt, upvotes, downvotes, answers, views }: Question) => {
+const QuestionCard = ({ _id, title, tags, author, createdAt, upvotes, downvotes, answers, views }: Question) => {
   return (
     <article className="border-line bg-background shadow-card hover:border-accent-solid flex flex-col gap-6 rounded-xl border p-5 md:p-9">
-      <h2 className="hover:text-accent-solid">{title}</h2>
+      <h2>
+        <Link href={ROUTES.QUESTION(_id)} className="text-fg hover:text-accent-solid">
+          {title}
+        </Link>
+      </h2>
 
       <TagList tags={tags} inline />
 

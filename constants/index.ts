@@ -3,7 +3,7 @@ import ROUTES from "./routes";
 
 export const links = [
   { href: ROUTES.HOME, label: "Home", icon: uiIcons.home },
-  { href: ROUTES.COMMUNITY, label: "Communities", icon: uiIcons.users },
+  { href: ROUTES.COMMUNITY, label: "Community", icon: uiIcons.users },
   { href: ROUTES.COLLECTIONS, label: "Collections", icon: uiIcons.star },
   { href: ROUTES.JOBS, label: "Find Jobs", icon: uiIcons.briefcase },
   { href: ROUTES.TAGS, label: "Tags", icon: uiIcons.tag },

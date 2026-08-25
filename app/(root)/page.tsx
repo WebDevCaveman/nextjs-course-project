@@ -1,6 +1,4 @@
 import QuestionCard from "@/components/cards/QuestionCard";
-import EmptyState from "@/components/empty-state/EmptyState";
-import Error from "@/components/error/Error";
 import { HugeIcon } from "@/components/icons/huge";
 import HomeFilter from "@/components/filters/HomeFilter";
 import LocalSearch from "@/components/search/LocalSearch";
@@ -8,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import ROUTES from "@/constants/routes";
 import Link from "next/link";
 import { getQuestions } from "@/lib/actions/question.action";
+import { DataRenderer } from "@/components/DataRenderer";
+import { EMPTY_QUESTIONS } from "@/constants/states";
 
 interface SearchParams {
   searchParams: Promise<{ [key: string]: string }>;
@@ -40,23 +40,13 @@ const Home = async ({ searchParams }: SearchParams) => {
 
       <HomeFilter />
 
-      {success ? (
-        questions && questions.length > 0 ? (
-          questions.map((question) => (
-            <Link key={question._id} href={ROUTES.QUESTION(question._id)} className="text-fg hover:text-fg">
-              <QuestionCard {...question} />
-            </Link>
-          ))
-        ) : (
-          <EmptyState
-            image="home"
-            title="No questions found"
-            description="There are no questions matching this view yet. Be the first to ask one."
-          />
-        )
-      ) : (
-        <Error image="collections" title="Error" description={error?.message || "Failed to fetch questions."} />
-      )}
+      <DataRenderer
+        success={success}
+        error={error}
+        data={questions}
+        empty={EMPTY_QUESTIONS}
+        render={(data) => data.map((question) => <QuestionCard key={question._id} {...question} />)}
+      />
     </>
   );
 };
