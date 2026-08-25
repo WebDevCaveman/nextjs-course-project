@@ -86,7 +86,7 @@ Screens outside this shell (auth, MobileNav mockup) are noted separately.
 
     tag card         flex column gap-14, p-[28px 24px], rounded-14, same border/shadow
                      ├─ name pill (uppercase 12px, bg-tertiary, self-start)
-                     ├─ blurb (13px, 2-line clamp)
+                     ├─ blurb (13px, 3-line clamp)
                      └─ "<count> Questions" (count in accent, bold)
 
     user card        flex column centered gap-16, p-[32px 24px], same border/shadow

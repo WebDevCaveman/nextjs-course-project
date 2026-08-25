@@ -285,7 +285,7 @@ construction — the base layer no longer touches form fields at all (see global
     tag-card   flex flex-col gap-3.5 rounded-xl border border-line bg-background p-9
                shadow-card hover:border-accent-solid
                name  w-fit rounded-sm bg-muted px-5 py-2 text-base font-semibold
-               desc  text-sm line-clamp-2
+               desc  text-sm line-clamp-3
                count text-sm font-semibold text-accent-solid
 
     user-card  flex flex-col items-center gap-3.5 rounded-xl border border-line

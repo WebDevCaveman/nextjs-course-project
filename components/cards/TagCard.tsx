@@ -17,7 +17,7 @@ const TagCard = ({ _id, name, questions }: Tag) => {
         {name.toUpperCase()}
       </Link>
 
-      <p className="line-clamp-2 text-sm">{tagDescription(name)}</p>
+      <p className="line-clamp-3 text-sm">{tagDescription(name)}</p>
 
       {questions !== undefined && (
         <p className="text-accent-solid text-sm font-semibold">
