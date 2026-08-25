@@ -1,9 +1,10 @@
 import { HugeIcon } from "@/components/icons/huge";
 import ROUTES from "@/constants/routes";
 import { tagIcon } from "@/lib/devicon";
+import { tagDescription } from "@/lib/tag-description";
 import Link from "next/link";
 
-const TagCard = ({ _id, name, questions, description }: Tag) => {
+const TagCard = ({ _id, name, questions }: Tag) => {
   const icon = tagIcon(name);
 
   return (
@@ -16,11 +17,11 @@ const TagCard = ({ _id, name, questions, description }: Tag) => {
         {name.toUpperCase()}
       </Link>
 
-      {description && <p className="line-clamp-2 text-sm">{description}</p>}
+      <p className="line-clamp-2 text-sm">{tagDescription(name)}</p>
 
       {questions !== undefined && (
         <p className="text-accent-solid text-sm font-semibold">
-          {questions} <span className="text-fg-subtle font-normal">Questions</span>
+          {questions} <span className="text-fg-subtle font-normal">{questions === 1 ? "Question" : "Questions"}</span>
         </p>
       )}
     </article>

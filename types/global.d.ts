@@ -3,7 +3,6 @@ interface Tag {
   _id: string;
   name: string;
   questions?: string | number;
-  description?: string;
 }
 
 interface Author {
