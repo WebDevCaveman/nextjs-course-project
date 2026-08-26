@@ -9,9 +9,15 @@
 
 "use server";
 
-import { CreateQuestionParams, EditQuestionParams, GetQuestionParams } from "@/types/action";
+import { CreateQuestionParams, EditQuestionParams, GetQuestionParams, IncrementViewsParams } from "@/types/action";
 import handleError from "../handlers/error";
-import { AskQuestionSchema, EditQuestionSchema, GetQuestionSchema, PaginatedSearchParamsSchema } from "../validations";
+import {
+  AskQuestionSchema,
+  EditQuestionSchema,
+  GetQuestionSchema,
+  IncrementViewsSchema,
+  PaginatedSearchParamsSchema,
+} from "../validations";
 import action from "../handlers/action";
 import mongoose, { QueryFilter } from "mongoose";
 import Question, { IQuestion } from "@/database/question.model";
@@ -20,6 +26,8 @@ import { IUserDoc } from "@/database/user.model";
 import TagQuestion from "@/database/tag-question.model";
 import { NotFoundError, UnauthorizedError } from "../http-errors";
 import { escapeRegExp } from "../utils";
+import { revalidatePath } from "next/cache";
+import ROUTES from "@/constants/routes";
 
 export const createQuestion = async (params: CreateQuestionParams): Promise<ActionResponse<Question>> => {
   const validationResult = await action({ params, schema: AskQuestionSchema, authorize: true });
@@ -168,7 +176,7 @@ export const getQuestion = async (params: GetQuestionParams): Promise<ActionResp
 
   try {
     const question = await Question.findById(questionId)
-      .populate<{ tags: ITagDoc[] }>("tags")
+      .populate<{ tags: ITagDoc[] }>("tags", "name")
       .populate<{ author: IUserDoc }>("author", "name image");
 
     if (!question) throw new NotFoundError("Question");
@@ -231,6 +239,24 @@ export const getQuestions = async (
     const isNext = totalQuestions > skip + questions.length;
 
     return { success: true, data: { questions: JSON.parse(JSON.stringify(questions)), isNext } };
+  } catch (error) {
+    return handleError(error) as ErrorResponse;
+  }
+};
+
+export const incrementViews = async (params: IncrementViewsParams): Promise<ActionResponse<{ views: number }>> => {
+  const validationResult = await action({ params, schema: IncrementViewsSchema });
+
+  if (validationResult instanceof Error) {
+    return handleError(validationResult) as ErrorResponse;
+  }
+
+  const { questionId } = validationResult.params!;
+
+  try {
+    const question = await Question.findByIdAndUpdate(questionId, { $inc: { views: 1 } }, { new: true });
+    if (!question) throw new NotFoundError("Question");
+    return { success: true, data: { views: question.views } };
   } catch (error) {
     return handleError(error) as ErrorResponse;
   }

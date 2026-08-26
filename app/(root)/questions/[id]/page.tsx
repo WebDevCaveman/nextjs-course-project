@@ -3,24 +3,42 @@ import TagList from "@/components/tag-list/TagList";
 import { HugeIcon } from "@/components/icons/huge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatRelativeTime } from "@/lib/time";
-import { notFound } from "next/navigation";
-import { getQuestion } from "@/lib/actions/question.action";
+import { notFound, redirect } from "next/navigation";
+import { getQuestion, incrementViews } from "@/lib/actions/question.action";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
+import { after } from "next/server";
 
 // Bloki wstawione w edytorze jako "Plain text" nie maja jezyka w markdownie, wiec
 // rehype-highlight domyslnie ich nie koloruje. Detekcja ograniczona do jezykow, ktore
 // oferuje edytor - bez tego zawezenia highlight.js zgaduje np. ini albo scss i myli sie.
 const CODE_LANGUAGES = ["javascript", "typescript", "xml", "css", "json", "python", "sql", "bash"];
 
+// W tym przypadku chcemy wywolac dwie funkcje asynchroniczne w tym samym czasie - pobranie pytania i inkrementacja liczby wyswietlen. Moglibysmy zrobic to zwyczajnie zmieniajac kolejnosc i najpierw odpalic incrementViews, a potem getQuestion, ale chcemy zeby pobranie pytania bylo priorytetowe i nie chcemy blokowac wyswietlenia pytania na czas inkrementacji liczby wyswietlen - jest to zle rozwiazanie, ktore wplywa na szybkosc generowania strony. Innym sposobem jest wykorzystanie funkcji after, ktora pozwala na wywolanie funkcji asynchronicznej po tym jak strona zostanie wyrenderowana i wyslana do klienta. Ale to rozwiazanie ma jeden zasadniczy problem, bo ilosc wyswietlen zostanie zaktualizowana dopiero po tym, jak juz wyswietlimy strone. Natomiast jest idealne jesli chcielibysmy podpiac np. analityke i wyslac do niej informacje o wyswietleniu pytania, bo nie blokuje to renderowania strony.
+// Dlatego tez w tym przypadku jest wykorzystanie opcji parallel w next.js, ktora pozwala na wywolanie funkcji asynchronicznych w tym samym czasie, bez blokowania renderowania strony. Czyli zarowno inkrementacja, jak i pobranie pytania wykonaja sie na serweerze w tym samym czasie, a my wyswietlimy pytanie od razu zamiast czekac na ikrementacje. To rozwiazanie dodatkowo niweluje problem tzw. waterfall effect, czyli sytuacji, w ktorej jedna funkcja asynchroniczna blokuje wykonanie drugiej - ale tez ma swoje wady.
+// Dlatego jesli naszym nadrzednym celem byloby tutaj wyswietlenie pytania zawsze z odpowiednio zaktualizowanym wynikiem wyswietlen to powinnismy to zrobic w ramach jednej funkcji, ktora najpierw zaktualizuje liczbe wyswietlen i dopiero potem pobierze i zwroci nam pytanie.
+
 const QuestionDetails = async ({ params }: RouteParams) => {
   const { id } = await params;
   if (!id) notFound();
 
+  // Aby skorzystac z parallel wystarczy, ze wywolamy Promise.all z tablica funkcji asynchronicznych, ktore chcemy wykonac w tym samym czasie. Poniewaz nie potrzebujemy wyniku z incrementViews, to mozemy go zignorowac i zostawic puste miejsce w destrukturyzacji tablicy i tylko pobrac wynik z getQuestion.
+  // Z parallel mozemy skorzystac tylko wtedy, gdy funkcje asynchroniczne nie sa zalezne od siebie, czyli nie potrzebujemy wyniku jednej funkcji do wywolania drugiej. W tym przypadku nie potrzebujemy wyniku z incrementViews, zeby pobrac pytanie, wiec mozemy je wywolac w tym samym czasie.
+  // Musimy tez pamietac o super waznej rzeczy, ze to rozwiazanie wykonuje funkcje niezaleznie od tego w jakiej kolejnosci je przekazemy i nie ma gwarancji, ktora z nich wykona sie pierwsza - domyslnie ta, ktora jest szybsza - co moze oznaczac, ze jesli nasze incrementViews bedzie wolniejsze od getQuestion, to wyswietlenie pytania moze nastapic zanim zostanie zaktualizowana liczba wyswietlen.
+  // const [, { data: question, success }] = await Promise.all([
+  //   incrementViews({ questionId: id }),
+  //   getQuestion({ questionId: id }),
+  // ]);
+
   const { data: question, success } = await getQuestion({ questionId: id });
 
-  if (!success || !question) notFound();
+  if (!success || !question) redirect("/404");
+
+  // Dlatego ostatecznie korzystamy z after, aby nasza strona wyswietlila sie od razu, a aktulizacja liczby wyswietlen nastapila pozniej - wiec user zobaczy aktualny wynik dopiero po odswiezeniu strony.
+  after(async () => {
+    await incrementViews({ questionId: id });
+  });
 
   return (
     <>

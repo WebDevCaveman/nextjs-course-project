@@ -90,7 +90,7 @@ export const getTagQuestions = async (
     }
     const totalQuestions = await Question.countDocuments(filterQuery);
     const questions = await Question.find(filterQuery)
-      .select("_id title views answers upvotes downvotes author createdAt")
+      .select("_id title views answers upvotes downvotes author tags createdAt")
       .populate<{ author: IUserDoc }>("author", "name image")
       .populate<{ tags: ITagDoc[] }>("tags", "name")
       .skip(skip)
