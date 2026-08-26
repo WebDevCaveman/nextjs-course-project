@@ -22,8 +22,9 @@ import { Separator } from "@/components/ui/separator";
 // Dlatego tez w tym przypadku jest wykorzystanie opcji parallel w next.js, ktora pozwala na wywolanie funkcji asynchronicznych w tym samym czasie, bez blokowania renderowania strony. Czyli zarowno inkrementacja, jak i pobranie pytania wykonaja sie na serweerze w tym samym czasie, a my wyswietlimy pytanie od razu zamiast czekac na ikrementacje. To rozwiazanie dodatkowo niweluje problem tzw. waterfall effect, czyli sytuacji, w ktorej jedna funkcja asynchroniczna blokuje wykonanie drugiej - ale tez ma swoje wady.
 // Dlatego jesli naszym nadrzednym celem byloby tutaj wyswietlenie pytania zawsze z odpowiednio zaktualizowanym wynikiem wyswietlen to powinnismy to zrobic w ramach jednej funkcji, ktora najpierw zaktualizuje liczbe wyswietlen i dopiero potem pobierze i zwroci nam pytanie.
 
-const QuestionDetails = async ({ params }: RouteParams) => {
+const QuestionDetails = async ({ params, searchParams }: RouteParams) => {
   const { id } = await params;
+  const { page, pageSize, filter } = await searchParams;
   if (!id) notFound();
   const session = await auth();
 
@@ -43,7 +44,12 @@ const QuestionDetails = async ({ params }: RouteParams) => {
     success: answersSuccess,
     data: answersData,
     error: answersError,
-  } = await getAnswers({ questionId: id, page: 1, pageSize: 5, filter: "latest" });
+  } = await getAnswers({
+    questionId: id,
+    page: Number(page) || 1,
+    pageSize: Number(pageSize) || 10,
+    filter: filter || "latest",
+  });
 
   // Dlatego ostatecznie korzystamy z after, aby nasza strona wyswietlila sie od razu, a aktulizacja liczby wyswietlen nastapila pozniej - wiec user zobaczy aktualny wynik dopiero po odswiezeniu strony.
   after(async () => {
@@ -91,6 +97,8 @@ const QuestionDetails = async ({ params }: RouteParams) => {
         error={answersError}
         data={answersData?.answers}
         totalAnswers={answersData?.totalAnswers || 0}
+        page={Number(page) || 1}
+        isNext={answersData?.isNext || false}
       />
 
       <Separator />

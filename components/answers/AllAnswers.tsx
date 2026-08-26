@@ -6,17 +6,13 @@ import { DataRenderer } from "@/components/DataRenderer";
 import { EMPTY_ANSWERS } from "@/constants/states";
 import { answersFilters } from "@/constants";
 
-interface AllAnswersProps {
-  success: boolean;
-  error?: {
-    message?: string;
-    details?: Record<string, string[]>;
-  };
-  data: Answer[] | null | undefined;
+interface Props extends ActionResponse<Answer[]> {
+  page: number;
+  isNext: boolean;
   totalAnswers: number;
 }
 
-const AllAnswers = ({ success, error, data, totalAnswers }: AllAnswersProps) => {
+const AllAnswers = ({ page, isNext, success, error, data, totalAnswers }: Props) => {
   return (
     <section className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
