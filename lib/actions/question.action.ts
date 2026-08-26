@@ -26,8 +26,6 @@ import { IUserDoc } from "@/database/user.model";
 import TagQuestion from "@/database/tag-question.model";
 import { NotFoundError, UnauthorizedError } from "../http-errors";
 import { escapeRegExp } from "../utils";
-import { revalidatePath } from "next/cache";
-import ROUTES from "@/constants/routes";
 
 export const createQuestion = async (params: CreateQuestionParams): Promise<ActionResponse<Question>> => {
   const validationResult = await action({ params, schema: AskQuestionSchema, authorize: true });

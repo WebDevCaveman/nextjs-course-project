@@ -4,12 +4,17 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formUrlQuery, removeKeysFromUrlQuery } from "@/lib/url";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { HugeIconSvg } from "@/components/icons/huge/HugeIconSvg";
+import { uiIcons } from "@/components/icons/huge/data/ui";
 
 interface PageFilterProps {
   filters: { name: string; value: string }[];
+  // "chips" to rzad przyciskow (Home, Tags), "select" to sortujacy dropdown (lista odpowiedzi)
+  variant?: "chips" | "select";
 }
 
-const PageFilter = ({ filters }: PageFilterProps) => {
+const PageFilter = ({ filters, variant = "chips" }: PageFilterProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const filterParams = searchParams.get("filter");
@@ -28,6 +33,24 @@ const PageFilter = ({ filters }: PageFilterProps) => {
 
     router.push(newUrl, { scroll: false });
   };
+
+  if (variant === "select") {
+    return (
+      <Select value={active} onValueChange={handleFilterChange}>
+        <SelectTrigger variant="soft" size="filter" aria-label="Sort by">
+          <HugeIconSvg icon={uiIcons.filter} size={16} className="text-fg-subtle" />
+          <SelectValue placeholder={filters[0].name} />
+        </SelectTrigger>
+        <SelectContent>
+          {filters.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  }
 
   return (
     <div className="flex flex-wrap gap-3">

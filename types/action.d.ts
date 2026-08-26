@@ -37,3 +37,12 @@ export interface GetTagQuestionsParams extends Omit<PaginatedSearchParams, "filt
 export interface IncrementViewsParams {
   questionId: string;
 }
+
+export interface CreateAnswerParams {
+  questionId: string;
+  content: string;
+}
+
+export interface GetAnswersParams extends PaginatedSearchParams {
+  questionId: string;
+}

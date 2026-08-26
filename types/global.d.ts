@@ -24,6 +24,15 @@ interface Question {
   views: number;
 }
 
+interface Answer {
+  _id: string;
+  author: Author;
+  content: string;
+  createdAt: string;
+  upvotes: number;
+  downvotes: number;
+}
+
 type ActionResponse<T = null> = {
   success: boolean;
   data?: T;

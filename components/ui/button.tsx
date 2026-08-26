@@ -12,6 +12,7 @@ const buttonVariants = cva(
         cta: "bg-[image:var(--accent-grad)] text-white shadow-[0_6px_16px_color-mix(in_srgb,var(--red-500)_26%,transparent)] hover:brightness-[1.03]",
         primary: "bg-accent-solid text-white hover:bg-accent-fg",
         outline: "border-line-strong bg-background text-fg hover:bg-subtle",
+        outlineAccent: "border-line-strong bg-background text-accent-solid hover:bg-subtle",
         soft: "bg-accent-soft text-accent-solid hover:bg-accent-solid hover:text-white",
         ghost: "bg-transparent font-medium text-fg-muted hover:bg-muted hover:text-fg",
         icon: "border-line bg-subtle text-[var(--icon-secondary)]",

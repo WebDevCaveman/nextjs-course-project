@@ -74,6 +74,11 @@ defaults alongside ours, they map to nothing in this design.
                        → ONE per screen, the single highest-priority action.
     variant  primary  bg-accent-solid text-white hover:bg-accent-fg
     variant  outline  border border-line-strong bg-background text-fg hover:bg-subtle
+    variant  outlineAccent
+                       border border-line-strong bg-background text-accent-solid
+                       hover:bg-subtle
+                       → outlined frame, accent label. "Generate an AI Answer" on the
+                         answer form — SCREENS.md §3 "outlined, accent text".
     variant  soft     bg-accent-soft text-accent-solid hover:bg-accent-solid hover:text-white
     variant  ghost     bg-transparent font-medium text-fg-muted hover:bg-muted hover:text-fg
     variant  icon      border border-line bg-subtle text-[var(--icon-secondary)]
