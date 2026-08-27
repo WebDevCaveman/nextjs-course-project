@@ -105,7 +105,7 @@ const QuestionDetails = async ({ params, searchParams }: RouteParams) => {
 
       <section className="flex flex-col gap-6">
         {session?.user?.id ? (
-          <AnswerForm questionId={question._id} />
+          <AnswerForm questionId={question._id} questionTitle={question.title} questionContent={question.content} />
         ) : (
           <StateSkeleton
             {...DEFAULT_DENIED}

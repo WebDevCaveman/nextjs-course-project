@@ -13,13 +13,20 @@ import { useRef, useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { createAnswer } from "@/lib/actions/answer.action";
+import { api } from "@/lib/api";
 
 const Editor = dynamic(() => import("@/components/editor"), {
   // Make sure we turn SSR off
   ssr: false,
 });
 
-const AnswerForm = ({ questionId }: { questionId: string }) => {
+interface AnswerFormProps {
+  questionId: string;
+  questionTitle: string;
+  questionContent: string;
+}
+
+const AnswerForm = ({ questionId, questionTitle, questionContent }: AnswerFormProps) => {
   const [isAnswering, startAnsweringTransition] = useTransition();
   const [isAISubmitting, setIsAISubmitting] = useState(false);
   const form = useForm({
@@ -43,6 +50,35 @@ const AnswerForm = ({ questionId }: { questionId: string }) => {
     });
   };
 
+  const generateAIAnswer = async () => {
+    setIsAISubmitting(true);
+    const userAnswer = editorRef.current?.getMarkdown();
+
+    if ((userAnswer?.trim().length ?? 0) < 50) {
+      toast.error("Your answer must be at least 50 characters long to enhance with AI.");
+      setIsAISubmitting(false);
+      return;
+    }
+
+    try {
+      const { success, data, error } = await api.ai.getAnswer(questionTitle, questionContent, userAnswer!);
+
+      if (!success || !data) {
+        throw new Error(error?.message || "Failed to generate AI answer.");
+      }
+
+      const formattedAnswer = data.replace(/^\s*#\s*/, ""); // Remove leading # if present
+
+      form.setValue("content", formattedAnswer);
+      editorRef.current?.setMarkdown(formattedAnswer);
+      toast.success("AI answer generated successfully!");
+    } catch (error) {
+      toast.error((error as Error).message || "Failed to generate AI answer.");
+    } finally {
+      setIsAISubmitting(false);
+    }
+  };
+
   return (
     <form className="flex flex-col gap-9" onSubmit={(e) => form.handleSubmit(handleSubmit)(e)}>
       <Controller
@@ -54,9 +90,15 @@ const AnswerForm = ({ questionId }: { questionId: string }) => {
               <FieldLabel onClick={() => editorRef.current?.focus()}>
                 Write your answer here <span className="text-accent-solid">*</span>
               </FieldLabel>
-              <Button type="button" variant="outlineAccent" size="sm" disabled={isAISubmitting}>
+              <Button
+                type="button"
+                variant="outlineAccent"
+                size="sm"
+                disabled={isAISubmitting}
+                onClick={generateAIAnswer}
+              >
                 <HugeIconSvg icon={uiIcons.flash} size={16} />
-                {isAISubmitting ? "Generating..." : "Generate with AI"}
+                {isAISubmitting ? "Generating..." : "Enhance with AI"}
               </Button>
             </div>
             <Editor value={field.value} editorRef={editorRef} fieldChange={field.onChange} />
