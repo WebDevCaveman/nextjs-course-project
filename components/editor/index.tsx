@@ -15,6 +15,8 @@ import {
   codeBlockPlugin,
   codeMirrorPlugin,
   toolbarPlugin,
+  diffSourcePlugin,
+  DiffSourceToggleWrapper,
   BoldItalicUnderlineToggles,
   StrikeThroughSupSubToggles,
   BlockTypeSelect,
@@ -76,10 +78,13 @@ const Editor = ({ value, fieldChange, editorRef, ...props }: EditorProps) => {
             codeMirrorExtensions: [resolvedTheme === "dark" ? basicDark : NO_THEME],
           }),
           markdownShortcutPlugin(),
+          // Tryb "source" pozwala wkleic surowy markdown - w trybie rich-text wklejony
+          // tekst zostaje doslowny, bo MDXEditor nie parsuje wklejanej tresci.
+          diffSourcePlugin({ viewMode: "rich-text" }),
           toolbarPlugin({
             toolbarClassName: "border-line bg-subtle flex flex-wrap items-center gap-1 border-b px-3 py-2",
             toolbarContents: () => (
-              <>
+              <DiffSourceToggleWrapper options={["rich-text", "source"]}>
                 <BoldItalicUnderlineToggles options={["Bold", "Italic"]} />
                 <StrikeThroughSupSubToggles options={["Strikethrough"]} />
                 <Separator />
@@ -91,7 +96,7 @@ const Editor = ({ value, fieldChange, editorRef, ...props }: EditorProps) => {
                 <InsertImage />
                 <Separator />
                 <InsertCodeBlock />
-              </>
+              </DiffSourceToggleWrapper>
             ),
           }),
         ]}
