@@ -17,6 +17,7 @@ import { getAnswers } from "@/lib/actions/answer.action";
 import AllAnswers from "@/components/answers/AllAnswers";
 import { CODE_LANGUAGES } from "@/constants";
 import { Separator } from "@/components/ui/separator";
+import Votes from "@/components/votes/Votes";
 
 // W tym przypadku chcemy wywolac dwie funkcje asynchroniczne w tym samym czasie - pobranie pytania i inkrementacja liczby wyswietlen. Moglibysmy zrobic to zwyczajnie zmieniajac kolejnosc i najpierw odpalic incrementViews, a potem getQuestion, ale chcemy zeby pobranie pytania bylo priorytetowe i nie chcemy blokowac wyswietlenia pytania na czas inkrementacji liczby wyswietlen - jest to zle rozwiazanie, ktore wplywa na szybkosc generowania strony. Innym sposobem jest wykorzystanie funkcji after, ktora pozwala na wywolanie funkcji asynchronicznej po tym jak strona zostanie wyrenderowana i wyslana do klienta. Ale to rozwiazanie ma jeden zasadniczy problem, bo ilosc wyswietlen zostanie zaktualizowana dopiero po tym, jak juz wyswietlimy strone. Natomiast jest idealne jesli chcielibysmy podpiac np. analityke i wyslac do niej informacje o wyswietleniu pytania, bo nie blokuje to renderowania strony.
 // Dlatego tez w tym przypadku jest wykorzystanie opcji parallel w next.js, ktora pozwala na wywolanie funkcji asynchronicznych w tym samym czasie, bez blokowania renderowania strony. Czyli zarowno inkrementacja, jak i pobranie pytania wykonaja sie na serweerze w tym samym czasie, a my wyswietlimy pytanie od razu zamiast czekac na ikrementacje. To rozwiazanie dodatkowo niweluje problem tzw. waterfall effect, czyli sytuacji, w ktorej jedna funkcja asynchroniczna blokuje wykonanie drugiej - ale tez ma swoje wady.
@@ -59,12 +60,15 @@ const QuestionDetails = async ({ params, searchParams }: RouteParams) => {
   return (
     <>
       <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-1.5">
-          <Avatar size="sm">
-            <AvatarImage src={question.author.image} alt={question.author.name} />
-            <AvatarFallback>{question.author.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <span className="text-base font-medium">{question.author.name}</span>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-1.5">
+            <Avatar size="sm">
+              <AvatarImage src={question.author.image} alt={question.author.name} />
+              <AvatarFallback>{question.author.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <span className="text-base font-medium">{question.author.name}</span>
+          </div>
+          <Votes upvotes={question.upvotes} downvotes={question.downvotes} hasupVoted={true} hasdownVoted={false} />
         </div>
 
         <h1>{question.title}</h1>

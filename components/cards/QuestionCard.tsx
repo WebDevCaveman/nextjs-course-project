@@ -27,8 +27,7 @@ const QuestionCard = ({ _id, title, tags, author, createdAt, upvotes, downvotes,
         </div>
 
         <div className="text-fg-subtle flex items-center gap-4 text-sm">
-          <Metric number={upvotes} type="upvotes" />
-          <Metric number={downvotes} type="downvotes" />
+          <Metric number={upvotes - downvotes} type="upvotes" />
           <Metric number={answers} type="answers" />
           <Metric number={views} type="views" />
         </div>
