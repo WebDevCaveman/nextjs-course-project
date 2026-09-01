@@ -1,8 +1,15 @@
 "use server";
 
-import { CreateVoteParams, HasVotedParams, HasVotedResponse, UpdateVoteCountParams } from "@/types/action";
+import {
+  AnswerVotesResponse,
+  CreateVoteParams,
+  GetAnswerVotesParams,
+  HasVotedParams,
+  HasVotedResponse,
+  UpdateVoteCountParams,
+} from "@/types/action";
 import action from "../handlers/action";
-import { CreateVoteSchema, HasVotedSchema } from "../validations";
+import { CreateVoteSchema, GetAnswerVotesSchema, HasVotedSchema } from "../validations";
 import handleError from "../handlers/error";
 import mongoose, { ClientSession } from "mongoose";
 import { NotFoundError, UnauthorizedError } from "../http-errors";
@@ -111,6 +118,37 @@ export const hasVoted = async (params: HasVotedParams): Promise<ActionResponse<H
         hasUpvoted: vote.voteType === "upvote",
         hasDownvoted: vote.voteType === "downvote",
       },
+    };
+  } catch (error) {
+    return handleError(error) as ErrorResponse;
+  }
+};
+
+// hasVoted pyta o jeden target, wiec lista odpowiedzi generowalaby jedno zapytanie na kazda karte
+// (10 odpowiedzi = 10 x Vote.findOne + 10 x auth()). Ta akcja pobiera glosy uzytkownika dla calej
+// strony odpowiedzi jednym zapytaniem i zwraca mape, z ktorej kazda karta wyluskuje swoj wpis.
+export const getAnswerVotes = async (params: GetAnswerVotesParams): Promise<ActionResponse<AnswerVotesResponse>> => {
+  const validationResult = await action({ params, schema: GetAnswerVotesSchema, authorize: true });
+
+  if (validationResult instanceof Error) {
+    return handleError(validationResult) as ErrorResponse;
+  }
+
+  const { answerIds } = validationResult.params!;
+  const userId = validationResult?.session?.user?.id;
+
+  if (!userId) return handleError(new UnauthorizedError("User must be logged in")) as ErrorResponse;
+
+  try {
+    // Filtr trafia dokladnie w indeks zlozony { author, id, type } z modelu Vote.
+    // Wracaja tylko te odpowiedzi, na ktore uzytkownik faktycznie zaglosowal - zwykle garstka albo zero.
+    const votes = await Vote.find({ author: userId, type: "answer", id: { $in: answerIds } })
+      .select("id voteType")
+      .lean();
+
+    return {
+      success: true,
+      data: Object.fromEntries(votes.map((vote) => [vote.id.toString(), vote.voteType])),
     };
   } catch (error) {
     return handleError(error) as ErrorResponse;

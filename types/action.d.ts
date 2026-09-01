@@ -63,3 +63,11 @@ export interface HasVotedResponse {
   hasUpvoted: boolean;
   hasDownvoted: boolean;
 }
+
+export interface GetAnswerVotesParams {
+  answerIds: string[];
+}
+
+// Mapa id odpowiedzi -> typ glosu, ktory oddal na nia zalogowany uzytkownik.
+// Odpowiedzi bez glosu po prostu nie maja tu klucza.
+export type AnswerVotesResponse = Record<string, "upvote" | "downvote">;

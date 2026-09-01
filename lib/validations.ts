@@ -136,3 +136,7 @@ export const HasVotedSchema = CreateVoteSchema.pick({
   targetId: true,
   targetType: true,
 });
+
+export const GetAnswerVotesSchema = z.object({
+  answerIds: z.array(z.string().min(1, { message: "Answer ID is required" })),
+});

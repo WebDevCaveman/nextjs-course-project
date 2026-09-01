@@ -18,7 +18,7 @@ import AllAnswers from "@/components/answers/AllAnswers";
 import { CODE_LANGUAGES } from "@/constants";
 import { Separator } from "@/components/ui/separator";
 import Votes from "@/components/votes/Votes";
-import { hasVoted } from "@/lib/actions/vote.action";
+import { getAnswerVotes, hasVoted } from "@/lib/actions/vote.action";
 import { Suspense } from "react";
 
 // W tym przypadku chcemy wywolac dwie funkcje asynchroniczne w tym samym czasie - pobranie pytania i inkrementacja liczby wyswietlen. Moglibysmy zrobic to zwyczajnie zmieniajac kolejnosc i najpierw odpalic incrementViews, a potem getQuestion, ale chcemy zeby pobranie pytania bylo priorytetowe i nie chcemy blokowac wyswietlenia pytania na czas inkrementacji liczby wyswietlen - jest to zle rozwiazanie, ktore wplywa na szybkosc generowania strony. Innym sposobem jest wykorzystanie funkcji after, ktora pozwala na wywolanie funkcji asynchronicznej po tym jak strona zostanie wyrenderowana i wyslana do klienta. Ale to rozwiazanie ma jeden zasadniczy problem, bo ilosc wyswietlen zostanie zaktualizowana dopiero po tym, jak juz wyswietlimy strone. Natomiast jest idealne jesli chcielibysmy podpiac np. analityke i wyslac do niej informacje o wyswietleniu pytania, bo nie blokuje to renderowania strony.
@@ -54,6 +54,13 @@ const QuestionDetails = async ({ params, searchParams }: RouteParams) => {
     pageSize: Number(pageSize) || 10,
     filter: filter || "latest",
   });
+
+  // Jeden odczyt glosow dla wszystkich odpowiedzi na stronie zamiast jednego zapytania na karte.
+  // Swiadomie bez await - promise leci w dol do kart, ktore odbieraja go przez use() pod Suspense,
+  // wiec tresc strony renderuje sie od razu, nie czekajac na stan glosow.
+  const votesPromise = userId
+    ? getAnswerVotes({ answerIds: answersData?.answers.map((answer) => answer._id) ?? [] })
+    : undefined;
 
   // Dlatego ostatecznie korzystamy z after, aby nasza strona wyswietlila sie od razu, a aktulizacja liczby wyswietlen nastapila pozniej - wiec user zobaczy aktualny wynik dopiero po odswiezeniu strony.
   after(async () => {
@@ -117,6 +124,7 @@ const QuestionDetails = async ({ params, searchParams }: RouteParams) => {
         totalAnswers={answersData?.totalAnswers || 0}
         page={Number(page) || 1}
         isNext={answersData?.isNext || false}
+        votesPromise={votesPromise}
       />
 
       <Separator />
