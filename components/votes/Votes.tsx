@@ -1,25 +1,31 @@
 "use client";
-import { useState } from "react";
+import { use, useState } from "react";
 import { toast } from "sonner";
 import { HugeIconSvg } from "@/components/icons/huge/HugeIconSvg";
 import { uiIcons } from "@/components/icons/huge/data/ui";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { useSession } from "next-auth/react";
+import { HasVotedResponse } from "@/types/action";
+import { createVote } from "@/lib/actions/vote.action";
 
 interface VotesProps {
   upvotes: number;
   downvotes: number;
-  hasupVoted: boolean;
-  hasdownVoted: boolean;
+  targetType: "question" | "answer";
+  targetId: string;
+  hasVotedPromise: Promise<ActionResponse<HasVotedResponse>>;
 }
 
-const Votes = ({ upvotes, downvotes, hasupVoted, hasdownVoted }: VotesProps) => {
+const Votes = ({ upvotes, downvotes, targetType, targetId, hasVotedPromise }: VotesProps) => {
   const session = useSession();
   const userId = session.data?.user?.id;
 
+  const { data } = use(hasVotedPromise);
   const [isLoading, setIsLoading] = useState(false);
-  const handleVote = (type: "upvote" | "downvote") => {
+  const { hasUpvoted, hasDownvoted } = data || {};
+
+  const handleVote = async (type: "upvote" | "downvote") => {
     if (!userId) {
       toast.error("You must be logged in to vote.");
       return;
@@ -28,10 +34,15 @@ const Votes = ({ upvotes, downvotes, hasupVoted, hasdownVoted }: VotesProps) => 
     setIsLoading(true);
 
     try {
+      const result = await createVote({ targetId, targetType, voteType: type });
+      if (!result.success) {
+        return toast.error(result.error?.message || "Failed to submit vote.");
+      }
+
       const successMessage =
         type === "upvote"
-          ? `Upvote ${!hasupVoted ? "added" : "removed"} successfully!`
-          : `Downvote ${!hasdownVoted ? "added" : "removed"} successfully!`;
+          ? `Upvote ${!hasUpvoted ? "added" : "removed"} successfully!`
+          : `Downvote ${!hasDownvoted ? "added" : "removed"} successfully!`;
       toast.info(successMessage);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to submit vote.");
@@ -44,11 +55,11 @@ const Votes = ({ upvotes, downvotes, hasupVoted, hasdownVoted }: VotesProps) => 
     <div className="flex items-center gap-1">
       <button
         aria-label="Upvote"
-        aria-pressed={hasupVoted}
+        aria-pressed={!!hasUpvoted}
         onClick={() => !isLoading && handleVote("upvote")}
         className={cn(
           "text-success bg-muted hover:bg-success-bg flex h-[30px] items-center gap-1.5 rounded-md px-2.5",
-          hasupVoted && "bg-success-bg"
+          hasUpvoted && "bg-success-bg"
         )}
       >
         <HugeIconSvg icon={uiIcons.voteUp} size={16} />
@@ -59,11 +70,11 @@ const Votes = ({ upvotes, downvotes, hasupVoted, hasdownVoted }: VotesProps) => 
 
       <button
         aria-label="Downvote"
-        aria-pressed={hasdownVoted}
+        aria-pressed={!!hasDownvoted}
         onClick={() => !isLoading && handleVote("downvote")}
         className={cn(
           "text-danger bg-muted hover:bg-danger-bg flex h-[30px] items-center gap-1.5 rounded-md px-2.5",
-          hasdownVoted && "bg-danger-bg"
+          hasDownvoted && "bg-danger-bg"
         )}
       >
         <HugeIconSvg icon={uiIcons.voteDown} size={16} />

@@ -33,6 +33,14 @@ interface Answer {
   downvotes: number;
 }
 
+interface Vote {
+  _id: string;
+  author: Author;
+  id: string;
+  type: "question" | "answer";
+  voteType: "upvote" | "downvote";
+}
+
 type ActionResponse<T = null> = {
   success: boolean;
   data?: T;

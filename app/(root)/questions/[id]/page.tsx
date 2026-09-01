@@ -18,6 +18,8 @@ import AllAnswers from "@/components/answers/AllAnswers";
 import { CODE_LANGUAGES } from "@/constants";
 import { Separator } from "@/components/ui/separator";
 import Votes from "@/components/votes/Votes";
+import { hasVoted } from "@/lib/actions/vote.action";
+import { Suspense } from "react";
 
 // W tym przypadku chcemy wywolac dwie funkcje asynchroniczne w tym samym czasie - pobranie pytania i inkrementacja liczby wyswietlen. Moglibysmy zrobic to zwyczajnie zmieniajac kolejnosc i najpierw odpalic incrementViews, a potem getQuestion, ale chcemy zeby pobranie pytania bylo priorytetowe i nie chcemy blokowac wyswietlenia pytania na czas inkrementacji liczby wyswietlen - jest to zle rozwiazanie, ktore wplywa na szybkosc generowania strony. Innym sposobem jest wykorzystanie funkcji after, ktora pozwala na wywolanie funkcji asynchronicznej po tym jak strona zostanie wyrenderowana i wyslana do klienta. Ale to rozwiazanie ma jeden zasadniczy problem, bo ilosc wyswietlen zostanie zaktualizowana dopiero po tym, jak juz wyswietlimy strone. Natomiast jest idealne jesli chcielibysmy podpiac np. analityke i wyslac do niej informacje o wyswietleniu pytania, bo nie blokuje to renderowania strony.
 // Dlatego tez w tym przypadku jest wykorzystanie opcji parallel w next.js, ktora pozwala na wywolanie funkcji asynchronicznych w tym samym czasie, bez blokowania renderowania strony. Czyli zarowno inkrementacja, jak i pobranie pytania wykonaja sie na serweerze w tym samym czasie, a my wyswietlimy pytanie od razu zamiast czekac na ikrementacje. To rozwiazanie dodatkowo niweluje problem tzw. waterfall effect, czyli sytuacji, w ktorej jedna funkcja asynchroniczna blokuje wykonanie drugiej - ale tez ma swoje wady.
@@ -28,6 +30,7 @@ const QuestionDetails = async ({ params, searchParams }: RouteParams) => {
   const { page, pageSize, filter } = await searchParams;
   if (!id) notFound();
   const session = await auth();
+  const userId = session?.user?.id;
 
   // Aby skorzystac z parallel wystarczy, ze wywolamy Promise.all z tablica funkcji asynchronicznych, ktore chcemy wykonac w tym samym czasie. Poniewaz nie potrzebujemy wyniku z incrementViews, to mozemy go zignorowac i zostawic puste miejsce w destrukturyzacji tablicy i tylko pobrac wynik z getQuestion.
   // Z parallel mozemy skorzystac tylko wtedy, gdy funkcje asynchroniczne nie sa zalezne od siebie, czyli nie potrzebujemy wyniku jednej funkcji do wywolania drugiej. W tym przypadku nie potrzebujemy wyniku z incrementViews, zeby pobrac pytanie, wiec mozemy je wywolac w tym samym czasie.
@@ -68,7 +71,19 @@ const QuestionDetails = async ({ params, searchParams }: RouteParams) => {
             </Avatar>
             <span className="text-base font-medium">{question.author.name}</span>
           </div>
-          <Votes upvotes={question.upvotes} downvotes={question.downvotes} hasupVoted={true} hasdownVoted={false} />
+
+          {/* Poniewaz use() doskonale współdziała z Suspense i error boundary to wykorzystamy to u nas */}
+          {userId && (
+            <Suspense fallback={<div>Loading...</div>}>
+              <Votes
+                upvotes={question.upvotes}
+                downvotes={question.downvotes}
+                targetType="question"
+                targetId={question._id}
+                hasVotedPromise={hasVoted({ targetId: id, targetType: "question" })}
+              />
+            </Suspense>
+          )}
         </div>
 
         <h1>{question.title}</h1>
@@ -78,8 +93,7 @@ const QuestionDetails = async ({ params, searchParams }: RouteParams) => {
             <HugeIcon name="interface/clock-circle" size={16} className="text-accent-solid" />
             Asked {formatRelativeTime(question.createdAt)}
           </span>
-          <Metric number={question.upvotes} type="upvotes" />
-          <Metric number={question.downvotes} type="downvotes" />
+          <Metric number={question.upvotes - question.downvotes} type="votes" />
           <Metric number={question.answers} type="answers" />
           <Metric number={question.views} type="views" />
         </div>
@@ -108,7 +122,7 @@ const QuestionDetails = async ({ params, searchParams }: RouteParams) => {
       <Separator />
 
       <section className="flex flex-col gap-6">
-        {session?.user?.id ? (
+        {userId ? (
           <AnswerForm questionId={question._id} questionTitle={question.title} questionContent={question.content} />
         ) : (
           <StateSkeleton

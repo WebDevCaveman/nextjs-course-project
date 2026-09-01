@@ -125,3 +125,14 @@ export const AIAnswerSchema = z.object({
   content: z.string().min(100, { message: "Answer must be at least 100 characters long" }),
   userAnswer: z.string().trim().min(50, { message: "User answer must be at least 50 characters long" }),
 });
+
+export const CreateVoteSchema = z.object({
+  targetId: z.string().min(1, { message: "Target ID is required" }),
+  targetType: z.enum(["question", "answer"], { message: "Target type must be either 'question' or 'answer'" }),
+  voteType: z.enum(["upvote", "downvote"], { message: "Vote type must be either 'upvote' or 'downvote'" }),
+});
+
+export const HasVotedSchema = CreateVoteSchema.pick({
+  targetId: true,
+  targetType: true,
+});

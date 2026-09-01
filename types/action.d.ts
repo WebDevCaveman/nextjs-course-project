@@ -46,3 +46,20 @@ export interface CreateAnswerParams {
 export interface GetAnswersParams extends PaginatedSearchParams {
   questionId: string;
 }
+
+export interface CreateVoteParams {
+  targetId: string;
+  targetType: "question" | "answer";
+  voteType: "upvote" | "downvote";
+}
+
+export interface UpdateVoteCountParams extends CreateVoteParams {
+  change: 1 | -1;
+}
+
+export type HasVotedParams = Pick<CreateVoteParams, "targetId" | "targetType">;
+
+export interface HasVotedResponse {
+  hasUpvoted: boolean;
+  hasDownvoted: boolean;
+}

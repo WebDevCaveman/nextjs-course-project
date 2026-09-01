@@ -17,6 +17,7 @@ const VoteSchema = new Schema<IVote>(
       ref: "User",
       required: true,
     },
+
     id: {
       type: Schema.Types.ObjectId, // 'questionId', 'answerId'
       required: true,
@@ -34,6 +35,9 @@ const VoteSchema = new Schema<IVote>(
   },
   { timestamps: true }
 );
+
+// Ensure a user can only vote once per target (question/answer)
+VoteSchema.index({ author: 1, id: 1, type: 1 }, { unique: true });
 
 const Vote: Model<IVote> = models?.Vote || model<IVote>("Vote", VoteSchema);
 
