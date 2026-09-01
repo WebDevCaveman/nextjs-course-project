@@ -26,6 +26,7 @@ import { IUserDoc } from "@/database/user.model";
 import TagQuestion from "@/database/tag-question.model";
 import { NotFoundError, UnauthorizedError } from "../http-errors";
 import { escapeRegExp } from "../utils";
+import { homeFilters } from "@/constants";
 
 export const createQuestion = async (params: CreateQuestionParams): Promise<ActionResponse<Question>> => {
   const validationResult = await action({ params, schema: AskQuestionSchema, authorize: true });
@@ -210,13 +211,13 @@ export const getQuestions = async (
   let sortCriteria = {};
 
   switch (filter) {
-    case "newest":
+    case homeFilters[0].value: // "newest"
       sortCriteria = { createdAt: -1 };
       break;
-    case "frequent":
+    case homeFilters[2].value: // "frequent"
       sortCriteria = { answers: -1 };
       break;
-    case "unanswered":
+    case homeFilters[3].value: // "unanswered"
       filterQuery.answers = 0;
       sortCriteria = { createdAt: -1 };
       break;

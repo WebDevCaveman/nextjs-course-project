@@ -9,6 +9,7 @@ import { GetTagQuestionsParams } from "@/types/action";
 import { NotFoundError } from "../http-errors";
 import Question, { IQuestion } from "@/database/question.model";
 import { IUserDoc } from "@/database/user.model";
+import { tagsFilters } from "@/constants";
 
 export const getTags = async (
   params: PaginatedSearchParams
@@ -32,19 +33,19 @@ export const getTags = async (
   let sortCriteria = {};
 
   switch (filter) {
-    case "popular":
+    case tagsFilters[0].value: // "popular"
       sortCriteria = { questions: -1 };
       break;
-    case "recent":
+    case tagsFilters[1].value: // "recent"
       sortCriteria = { createdAt: -1 };
       break;
-    case "oldest":
+    case tagsFilters[2].value: // "oldest"
       sortCriteria = { createdAt: 1 };
       break;
-    case "name_asc":
+    case tagsFilters[3].value: // "name_asc"
       sortCriteria = { name: 1 };
       break;
-    case "name_desc":
+    case tagsFilters[4].value: // "name_desc"
       sortCriteria = { name: -1 };
       break;
     default:

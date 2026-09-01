@@ -9,6 +9,7 @@ import { Answer, Question } from "@/database";
 import ROUTES from "@/constants/routes";
 import { revalidatePath } from "next/cache";
 import { IUserDoc } from "@/database/user.model";
+import { answersFilters } from "@/constants";
 
 export const createAnswer = async (params: CreateAnswerParams): Promise<ActionResponse<Answer>> => {
   const validationResult = await action({ params, schema: AnswerServerSchema, authorize: true });
@@ -69,13 +70,13 @@ export const getAnswers = async (
   let sortCriteria = {};
 
   switch (filter) {
-    case "latest":
+    case answersFilters[0].value: // "newest"
       sortCriteria = { createdAt: -1 };
       break;
-    case "oldest":
+    case answersFilters[1].value: // "oldest"
       sortCriteria = { createdAt: 1 };
       break;
-    case "popular":
+    case answersFilters[2].value: // "popular"
       sortCriteria = { upvotes: -1 };
       break;
     default:

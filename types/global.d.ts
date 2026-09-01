@@ -41,6 +41,18 @@ interface Vote {
   voteType: "upvote" | "downvote";
 }
 
+interface User {
+  _id: string;
+  name: string;
+  username: string;
+  email: string;
+  bio?: string;
+  image?: string;
+  location?: string;
+  portfolio?: string;
+  reputation?: number;
+}
+
 type ActionResponse<T = null> = {
   success: boolean;
   data?: T;
