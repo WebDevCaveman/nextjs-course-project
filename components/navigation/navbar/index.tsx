@@ -27,7 +27,7 @@ const Navbar = async () => {
   );
 
   return (
-    <header className="border-line bg-background sticky top-0 z-40 flex h-16 items-center justify-between gap-6 border-b px-6">
+    <header className="border-line bg-background sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-6 border-b px-6">
       <Link href="/" className="text-fg hover:text-fg flex items-center gap-2.5">
         <span className="flex size-7.5 items-center justify-center rounded-[9px] bg-(image:--accent-grad)">
           <Image
