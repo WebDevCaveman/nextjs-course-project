@@ -53,6 +53,12 @@ interface User {
   reputation?: number;
 }
 
+interface Collection {
+  _id: string;
+  question: Question;
+  author: string | Author;
+}
+
 type ActionResponse<T = null> = {
   success: boolean;
   data?: T;

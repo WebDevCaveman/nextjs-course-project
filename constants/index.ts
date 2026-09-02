@@ -38,6 +38,14 @@ export const usersFilters = [
   { name: "Popular", value: "popular" },
 ];
 
+export const collectionsFilters = [
+  { name: "Most Recent", value: "most_recent" },
+  { name: "Oldest", value: "oldest" },
+  { name: "Most Voted", value: "most_voted" },
+  { name: "Most Viewed", value: "most_viewed" },
+  { name: "Most Answered", value: "most_answered" },
+];
+
 // Bloki wstawione w edytorze jako "Plain text" nie maja jezyka w markdownie, wiec
 // rehype-highlight domyslnie ich nie koloruje. Detekcja ograniczona do jezykow, ktore
 // oferuje edytor - bez tego zawezenia highlight.js zgaduje np. ini albo scss i myli sie.
