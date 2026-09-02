@@ -26,12 +26,13 @@ const Votes = ({ upvotes, downvotes, targetType, targetId, hasVotedPromise }: Vo
   const { hasUpvoted, hasDownvoted } = data || {};
 
   const handleVote = async (type: "upvote" | "downvote") => {
+    setIsLoading(true);
+
     if (!userId) {
       toast.error("You must be logged in to vote.");
+      setIsLoading(false);
       return;
     }
-
-    setIsLoading(true);
 
     try {
       const result = await createVote({ targetId, targetType, voteType: type });
@@ -56,9 +57,10 @@ const Votes = ({ upvotes, downvotes, targetType, targetId, hasVotedPromise }: Vo
       <button
         aria-label="Upvote"
         aria-pressed={!!hasUpvoted}
-        onClick={() => !isLoading && handleVote("upvote")}
+        disabled={isLoading}
+        onClick={() => handleVote("upvote")}
         className={cn(
-          "text-success bg-muted hover:bg-success-bg flex h-[30px] items-center gap-1.5 rounded-md px-2.5",
+          "text-success bg-muted hover:bg-success-bg flex h-[30px] items-center gap-1.5 rounded-md px-2.5 disabled:cursor-not-allowed disabled:opacity-50",
           hasUpvoted && "bg-success-bg"
         )}
       >
@@ -71,9 +73,10 @@ const Votes = ({ upvotes, downvotes, targetType, targetId, hasVotedPromise }: Vo
       <button
         aria-label="Downvote"
         aria-pressed={!!hasDownvoted}
-        onClick={() => !isLoading && handleVote("downvote")}
+        disabled={isLoading}
+        onClick={() => handleVote("downvote")}
         className={cn(
-          "text-danger bg-muted hover:bg-danger-bg flex h-[30px] items-center gap-1.5 rounded-md px-2.5",
+          "text-danger bg-muted hover:bg-danger-bg flex h-[30px] items-center gap-1.5 rounded-md px-2.5 disabled:cursor-not-allowed disabled:opacity-50",
           hasDownvoted && "bg-danger-bg"
         )}
       >

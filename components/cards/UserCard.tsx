@@ -25,7 +25,7 @@ const UserCard = ({ _id, name, username, image }: User) => {
         </div>
       </Link>
 
-      <TagList tags={MOCK_TAGS} inline className="justify-center" />
+      <TagList tags={MOCK_TAGS} inline size="sm" className="justify-center" />
     </article>
   );
 };

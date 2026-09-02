@@ -23,6 +23,9 @@ const CollectionSchema = new Schema<ICollection>(
   { timestamps: true }
 );
 
+// Ensure a user can only save a question once
+CollectionSchema.index({ author: 1, question: 1 }, { unique: true });
+
 const Collection: Model<ICollection> = models?.Collection || model<ICollection>("Collection", CollectionSchema);
 
 export default Collection;

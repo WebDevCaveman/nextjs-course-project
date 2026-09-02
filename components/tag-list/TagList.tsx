@@ -10,12 +10,15 @@ const TagList = ({
   inline = false,
   onRemove,
   className,
+  size = "md",
 }: {
   tags: Tag[];
   inline?: boolean;
   /** Pass to render the removable chip — COMPONENTS.md §Tag, `removable`. */
   onRemove?: (name: string) => void;
   className?: string;
+  /** COMPONENTS.md §Tag — `sm` is the uppercase card tag row, `md` the list chip. */
+  size?: "sm" | "md";
 }) => {
   return (
     <ul className={cn("flex list-none pl-0", inline ? "flex-row flex-wrap gap-2" : "flex-col gap-3.5", className)}>
@@ -25,8 +28,10 @@ const TagList = ({
         const chip = (
           <span
             className={cn(
-              "bg-muted text-fg-muted inline-flex items-center gap-2 rounded-sm py-1 text-xs font-medium",
-              onRemove ? "pr-1.5 pl-[10px]" : "px-[10px]"
+              "bg-muted inline-flex items-center gap-2",
+              size === "sm"
+                ? "text-fg-subtle h-[29px] rounded-md px-4 text-[10px] font-semibold tracking-[0.04em] uppercase"
+                : cn("text-fg-muted rounded-sm py-1 text-xs font-medium", onRemove ? "pr-1.5 pl-[10px]" : "px-[10px]")
             )}
           >
             {icon ? <i className={`${icon} text-[20px]`} /> : <HugeIconSvg icon={uiIcons.tag} size={20} />}

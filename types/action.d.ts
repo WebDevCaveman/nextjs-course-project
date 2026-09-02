@@ -71,3 +71,7 @@ export interface GetAnswerVotesParams {
 // Mapa id odpowiedzi -> typ glosu, ktory oddal na nia zalogowany uzytkownik.
 // Odpowiedzi bez glosu po prostu nie maja tu klucza.
 export type AnswerVotesResponse = Record<string, "upvote" | "downvote">;
+
+export interface CollectionBaseParams {
+  questionId: string;
+}
