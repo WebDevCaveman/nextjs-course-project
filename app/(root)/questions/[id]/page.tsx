@@ -20,6 +20,8 @@ import { Separator } from "@/components/ui/separator";
 import Votes from "@/components/votes/Votes";
 import { getAnswerVotes, hasVoted } from "@/lib/actions/vote.action";
 import { Suspense } from "react";
+import SaveQuestion from "@/components/questions/SaveQuestion";
+import { hasSaved } from "@/lib/actions/collection.action";
 
 // W tym przypadku chcemy wywolac dwie funkcje asynchroniczne w tym samym czasie - pobranie pytania i inkrementacja liczby wyswietlen. Moglibysmy zrobic to zwyczajnie zmieniajac kolejnosc i najpierw odpalic incrementViews, a potem getQuestion, ale chcemy zeby pobranie pytania bylo priorytetowe i nie chcemy blokowac wyswietlenia pytania na czas inkrementacji liczby wyswietlen - jest to zle rozwiazanie, ktore wplywa na szybkosc generowania strony. Innym sposobem jest wykorzystanie funkcji after, ktora pozwala na wywolanie funkcji asynchronicznej po tym jak strona zostanie wyrenderowana i wyslana do klienta. Ale to rozwiazanie ma jeden zasadniczy problem, bo ilosc wyswietlen zostanie zaktualizowana dopiero po tym, jak juz wyswietlimy strone. Natomiast jest idealne jesli chcielibysmy podpiac np. analityke i wyslac do niej informacje o wyswietleniu pytania, bo nie blokuje to renderowania strony.
 // Dlatego tez w tym przypadku jest wykorzystanie opcji parallel w next.js, ktora pozwala na wywolanie funkcji asynchronicznych w tym samym czasie, bez blokowania renderowania strony. Czyli zarowno inkrementacja, jak i pobranie pytania wykonaja sie na serweerze w tym samym czasie, a my wyswietlimy pytanie od razu zamiast czekac na ikrementacje. To rozwiazanie dodatkowo niweluje problem tzw. waterfall effect, czyli sytuacji, w ktorej jedna funkcja asynchroniczna blokuje wykonanie drugiej - ale tez ma swoje wady.
@@ -79,17 +81,21 @@ const QuestionDetails = async ({ params, searchParams }: RouteParams) => {
             <span className="text-base font-medium">{question.author.name}</span>
           </div>
 
-          {/* Poniewaz use() doskonale współdziała z Suspense i error boundary to wykorzystamy to u nas */}
           {userId && (
-            <Suspense fallback={<div>Loading...</div>}>
-              <Votes
-                upvotes={question.upvotes}
-                downvotes={question.downvotes}
-                targetType="question"
-                targetId={question._id}
-                hasVotedPromise={hasVoted({ targetId: id, targetType: "question" })}
-              />
-            </Suspense>
+            <div className="flex items-center gap-2">
+              <Suspense fallback={<div>Loading...</div>}>
+                <Votes
+                  upvotes={question.upvotes}
+                  downvotes={question.downvotes}
+                  targetType="question"
+                  targetId={question._id}
+                  hasVotedPromise={hasVoted({ targetId: id, targetType: "question" })}
+                />
+              </Suspense>
+              <Suspense fallback={<div>Loading...</div>}>
+                <SaveQuestion questionId={question._id} hasSavedPromise={hasSaved({ questionId: question._id })} />
+              </Suspense>
+            </div>
           )}
         </div>
 
