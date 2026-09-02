@@ -56,7 +56,7 @@ interface User {
 interface Collection {
   _id: string;
   question: Question;
-  author: string | Author;
+  author: Author;
 }
 
 type ActionResponse<T = null> = {
