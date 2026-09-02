@@ -70,7 +70,7 @@ export const getAnswers = async (
   let sortCriteria = {};
 
   switch (filter) {
-    case answersFilters[0].value: // "newest"
+    case answersFilters[0].value: // "latest"
       sortCriteria = { createdAt: -1 };
       break;
     case answersFilters[1].value: // "oldest"

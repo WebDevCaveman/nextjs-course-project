@@ -46,7 +46,13 @@ const Home = async ({ searchParams }: SearchParams) => {
         error={error}
         data={questions}
         empty={EMPTY_QUESTIONS}
-        render={(data) => data.map((question) => <QuestionCard key={question._id} {...question} />)}
+        render={(data) => (
+          <section className="grid gap-10 min-[1920px]:grid-cols-2">
+            {data.map((question) => (
+              <QuestionCard key={question._id} {...question} />
+            ))}
+          </section>
+        )}
       />
     </>
   );

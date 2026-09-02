@@ -9,14 +9,16 @@ const TagList = ({
   tags,
   inline = false,
   onRemove,
+  className,
 }: {
   tags: Tag[];
   inline?: boolean;
   /** Pass to render the removable chip — COMPONENTS.md §Tag, `removable`. */
   onRemove?: (name: string) => void;
+  className?: string;
 }) => {
   return (
-    <ul className={cn("flex list-none pl-0", inline ? "flex-row flex-wrap gap-2" : "flex-col gap-3.5")}>
+    <ul className={cn("flex list-none pl-0", inline ? "flex-row flex-wrap gap-2" : "flex-col gap-3.5", className)}>
       {tags.map(({ _id, name, questions }) => {
         const icon = tagIcon(name);
 
