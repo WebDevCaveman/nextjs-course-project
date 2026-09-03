@@ -142,7 +142,7 @@ Po **każdym** takim pushu, bez pytania:
 
 1. Uruchom **osobnego agenta w tle** (Agent tool, nie główny kontekst). Agent czeka, aż nowa
    wersja jest live, potem robi smoke test produkcji w przeglądarce: strona główna, `/tags`,
-   `/community`, `/collection`, szczegóły pytania — brak 500, brak błędów w konsoli, kluczowe
+   `/community`, `/collections`, szczegóły pytania — brak 500, brak błędów w konsoli, kluczowe
    elementy renderują się w obu motywach (`.dark` na `<html>`).
 2. Główna rozmowa **nie czeka** na wynik i nie dostaje logów. Pracuj dalej z użytkownikiem.
 3. Zielone → jedna linijka „deploy OK” w głównym oknie.
