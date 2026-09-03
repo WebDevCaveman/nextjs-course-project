@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 interface StateSkeletonProps {
-  image: {
+  image?: {
     light: string;
     dark: string;
     alt: string;
@@ -20,20 +20,24 @@ interface StateSkeletonProps {
 export const StateSkeleton = ({ image, title, message, button }: StateSkeletonProps) => {
   return (
     <section className="flex flex-col items-center gap-6 py-20 text-center">
-      <Image
-        src={image.light}
-        alt={image.alt}
-        width={358}
-        height={358}
-        className="h-auto w-full max-w-[270px] rounded-md dark:hidden"
-      />
-      <Image
-        src={image.dark}
-        alt={image.alt}
-        width={358}
-        height={358}
-        className="hidden h-auto w-full max-w-[270px] rounded-md dark:block"
-      />
+      {image && (
+        <>
+          <Image
+            src={image.light}
+            alt={image.alt}
+            width={358}
+            height={358}
+            className="h-auto w-full max-w-[270px] rounded-md dark:hidden"
+          />
+          <Image
+            src={image.dark}
+            alt={image.alt}
+            width={358}
+            height={358}
+            className="hidden h-auto w-full max-w-[270px] rounded-md dark:block"
+          />
+        </>
+      )}
       <h2 className="text-2xl">{title}</h2>
       <p className="max-w-[46ch] whitespace-pre-line">{message}</p>
       {button && (
@@ -71,7 +75,7 @@ export const DataRenderer = <T,>({ success, error, empty = DEFAULT_EMPTY, data, 
   if (!data || data.length === 0) {
     return (
       <StateSkeleton
-        image={{ light: empty.image.light, dark: empty.image.dark, alt: empty.image.alt }}
+        image={empty.image ? { light: empty.image.light, dark: empty.image.dark, alt: empty.image.alt } : undefined}
         title={empty.title}
         message={empty.message}
         button={empty.button}

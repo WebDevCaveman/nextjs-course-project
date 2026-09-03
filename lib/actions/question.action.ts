@@ -27,6 +27,7 @@ import TagQuestion from "@/database/tag-question.model";
 import { NotFoundError, UnauthorizedError } from "../http-errors";
 import { escapeRegExp } from "../utils";
 import { homeFilters } from "@/constants";
+import dbConnect from "../mongoose";
 
 export const createQuestion = async (params: CreateQuestionParams): Promise<ActionResponse<Question>> => {
   const validationResult = await action({ params, schema: AskQuestionSchema, authorize: true });
@@ -256,6 +257,17 @@ export const incrementViews = async (params: IncrementViewsParams): Promise<Acti
     const question = await Question.findByIdAndUpdate(questionId, { $inc: { views: 1 } }, { new: true });
     if (!question) throw new NotFoundError("Question");
     return { success: true, data: { views: question.views } };
+  } catch (error) {
+    return handleError(error) as ErrorResponse;
+  }
+};
+
+export const getHotQuestions = async (): Promise<ActionResponse<Question[]>> => {
+  try {
+    // W tym przypadku nie korzystamy z action() a wiec musimy nawiazac polaczenie z baza danych w tym miejscu.
+    await dbConnect();
+    const questions = await Question.find().sort({ views: -1, upvotes: -1 }).limit(5).lean();
+    return { success: true, data: JSON.parse(JSON.stringify(questions)) };
   } catch (error) {
     return handleError(error) as ErrorResponse;
   }

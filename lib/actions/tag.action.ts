@@ -10,6 +10,7 @@ import { NotFoundError } from "../http-errors";
 import Question, { IQuestion } from "@/database/question.model";
 import { IUserDoc } from "@/database/user.model";
 import { tagsFilters } from "@/constants";
+import dbConnect from "../mongoose";
 
 export const getTags = async (
   params: PaginatedSearchParams
@@ -104,6 +105,16 @@ export const getTagQuestions = async (
       success: true,
       data: { tag: JSON.parse(JSON.stringify(tag)), questions: JSON.parse(JSON.stringify(questions)), isNext },
     };
+  } catch (error) {
+    return handleError(error) as ErrorResponse;
+  }
+};
+
+export const getTopTags = async (): Promise<ActionResponse<Tag[]>> => {
+  try {
+    await dbConnect();
+    const tags = await Tag.find().sort({ questions: -1 }).limit(6).lean();
+    return { success: true, data: JSON.parse(JSON.stringify(tags)) };
   } catch (error) {
     return handleError(error) as ErrorResponse;
   }
