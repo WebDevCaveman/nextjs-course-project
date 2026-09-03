@@ -34,41 +34,50 @@ const PageFilter = ({ filters, variant = "chips" }: PageFilterProps) => {
     router.push(newUrl, { scroll: false });
   };
 
-  if (variant === "select") {
-    return (
-      <Select value={active} onValueChange={handleFilterChange}>
-        <SelectTrigger variant="soft" size="filter" aria-label="Sort by">
-          <HugeIconSvg icon={uiIcons.filter} size={16} className="text-fg-subtle" />
-          <SelectValue placeholder={filters[0].name} />
-        </SelectTrigger>
-        <SelectContent>
-          {filters.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    );
-  }
+  const filterSelect = (
+    <Select value={active} onValueChange={handleFilterChange}>
+      <SelectTrigger
+        variant="soft"
+        size="filter"
+        width="responsive"
+        aria-label={variant === "select" ? "Sort by" : "Filter"}
+      >
+        <HugeIconSvg icon={uiIcons.filter} size={16} className="text-fg-subtle" />
+        <SelectValue placeholder={filters[0].name} />
+      </SelectTrigger>
+      <SelectContent>
+        {filters.map((item) => (
+          <SelectItem key={item.value} value={item.value}>
+            {item.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
+  if (variant === "select") return filterSelect;
 
   return (
-    <div className="flex flex-wrap gap-3">
-      {filters.map((item) => (
-        <button
-          key={item.value}
-          className={cn(
-            "bg-muted text-fg-muted h-[42px] rounded-lg px-4 text-[13px] font-medium",
-            active === item.value && "bg-accent-soft text-accent-solid font-semibold"
-          )}
-          onClick={() => {
-            handleFilterChange(item.value);
-          }}
-        >
-          {item.name}
-        </button>
-      ))}
-    </div>
+    <>
+      <div className="md:hidden">{filterSelect}</div>
+
+      <div className="hidden flex-wrap gap-3 md:flex">
+        {filters.map((item) => (
+          <button
+            key={item.value}
+            className={cn(
+              "bg-muted text-fg-muted h-[42px] rounded-lg px-4 text-[13px] font-medium",
+              active === item.value && "bg-accent-soft text-accent-solid font-semibold"
+            )}
+            onClick={() => {
+              handleFilterChange(item.value);
+            }}
+          >
+            {item.name}
+          </button>
+        ))}
+      </div>
+    </>
   );
 };
 

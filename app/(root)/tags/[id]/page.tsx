@@ -1,5 +1,6 @@
 import QuestionCard from "@/components/cards/QuestionCard";
 import { DataRenderer } from "@/components/DataRenderer";
+import Pagination from "@/components/pagination/Pagination";
 import LocalSearch from "@/components/search/LocalSearch";
 import ROUTES from "@/constants/routes";
 import { EMPTY_QUESTIONS } from "@/constants/states";
@@ -20,7 +21,7 @@ const TagQuestions = async ({ params, searchParams }: RouteParams) => {
 
   if (!success || !data) notFound();
 
-  const { tag, questions } = data;
+  const { tag, questions, isNext } = data;
 
   return (
     <>
@@ -35,7 +36,16 @@ const TagQuestions = async ({ params, searchParams }: RouteParams) => {
         error={error}
         data={questions}
         empty={EMPTY_QUESTIONS}
-        render={(data) => data.map((question) => <QuestionCard key={question._id} {...question} />)}
+        render={(data) => (
+          <div className="flex flex-col gap-10">
+            <section className="grid gap-10 min-[1920px]:grid-cols-2">
+              {data.map((question) => (
+                <QuestionCard key={question._id} {...question} />
+              ))}
+            </section>
+            <Pagination page={page} isNext={isNext || false} />
+          </div>
+        )}
       />
     </>
   );

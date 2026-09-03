@@ -6,6 +6,7 @@ import { getTags } from "@/lib/actions/tag.action";
 import { DataRenderer } from "@/components/DataRenderer";
 import { EMPTY_TAGS } from "@/constants/states";
 import { tagsFilters } from "@/constants";
+import Pagination from "@/components/pagination/Pagination";
 
 interface SearchParams {
   searchParams: Promise<{ [key: string]: string }>;
@@ -20,7 +21,7 @@ const Tags = async ({ searchParams }: SearchParams) => {
     pageSize: Number(pageSize) || 10,
   });
 
-  const { tags } = data || {};
+  const { tags, isNext } = data || {};
 
   return (
     <>
@@ -38,11 +39,14 @@ const Tags = async ({ searchParams }: SearchParams) => {
         data={tags}
         empty={EMPTY_TAGS}
         render={(data) => (
-          <section className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-6">
-            {data.map((tag) => (
-              <TagCard key={tag._id} {...tag} />
-            ))}
-          </section>
+          <div className="flex flex-col gap-10">
+            <section className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-6">
+              {data.map((tag) => (
+                <TagCard key={tag._id} {...tag} />
+              ))}
+            </section>
+            <Pagination page={page} isNext={isNext || false} />
+          </div>
         )}
       />
     </>

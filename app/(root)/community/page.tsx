@@ -6,7 +6,7 @@ import { usersFilters } from "@/constants";
 import ROUTES from "@/constants/routes";
 import { EMPTY_USERS } from "@/constants/states";
 import { getUsers } from "@/lib/actions/user.action";
-
+import Pagination from "@/components/pagination/Pagination";
 interface SearchParams {
   searchParams: Promise<{ [key: string]: string }>;
 }
@@ -20,7 +20,7 @@ const Community = async ({ searchParams }: SearchParams) => {
     pageSize: Number(pageSize) || 10,
   });
 
-  const { users } = data || {};
+  const { users, isNext } = data || {};
 
   return (
     <>
@@ -38,11 +38,14 @@ const Community = async ({ searchParams }: SearchParams) => {
         data={users}
         empty={EMPTY_USERS}
         render={(data) => (
-          <section className="grid grid-cols-[repeat(auto-fill,minmax(max(240px,calc((100%_-_3_*_1.5rem)_/_4)),1fr))] gap-6">
-            {data.map((user) => (
-              <UserCard key={user._id} {...user} />
-            ))}
-          </section>
+          <div className="flex flex-col gap-10">
+            <section className="grid grid-cols-[repeat(auto-fill,minmax(max(240px,calc((100%_-_3_*_1.5rem)_/_4)),1fr))] gap-6">
+              {data.map((user) => (
+                <UserCard key={user._id} {...user} />
+              ))}
+            </section>
+            <Pagination page={page} isNext={isNext || false} />
+          </div>
         )}
       />
     </>

@@ -6,6 +6,7 @@ import { DataRenderer } from "@/components/DataRenderer";
 import { EMPTY_ANSWERS } from "@/constants/states";
 import { answersFilters } from "@/constants";
 import { AnswerVotesResponse } from "@/types/action";
+import Pagination from "../pagination/Pagination";
 
 interface Props extends ActionResponse<Answer[]> {
   page: number;
@@ -54,6 +55,7 @@ const AllAnswers = ({ page, isNext, success, error, data, totalAnswers, votesPro
                 />
               </Fragment>
             ))}
+            <Pagination page={page} isNext={isNext || false} />
           </div>
         )}
       />

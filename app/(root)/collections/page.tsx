@@ -1,14 +1,12 @@
 import QuestionCard from "@/components/cards/QuestionCard";
 import { DataRenderer } from "@/components/DataRenderer";
 import PageFilter from "@/components/filters/PageFilter";
-import { HugeIcon } from "@/components/icons/huge";
+import Pagination from "@/components/pagination/Pagination";
 import LocalSearch from "@/components/search/LocalSearch";
 import { collectionsFilters } from "@/constants";
 import ROUTES from "@/constants/routes";
-import { EMPTY_COLLECTIONS, EMPTY_QUESTIONS } from "@/constants/states";
+import { EMPTY_COLLECTIONS } from "@/constants/states";
 import { getSavedQuestions } from "@/lib/actions/collection.action";
-import { Button } from "@mdxeditor/editor";
-import Link from "next/link";
 
 interface SearchParams {
   searchParams: Promise<{ [key: string]: string }>;
@@ -23,7 +21,7 @@ const Collections = async ({ searchParams }: SearchParams) => {
     pageSize: Number(pageSize) || 10,
   });
 
-  const { collections } = data || {};
+  const { collections, isNext } = data || {};
 
   return (
     <>
@@ -46,11 +44,14 @@ const Collections = async ({ searchParams }: SearchParams) => {
         data={collections}
         empty={EMPTY_COLLECTIONS}
         render={(collections) => (
-          <section className="grid gap-10 min-[1920px]:grid-cols-2">
-            {collections.map(({ question }) => (
-              <QuestionCard key={question._id} {...question} />
-            ))}
-          </section>
+          <div className="flex flex-col gap-10">
+            <section className="grid gap-10 min-[1920px]:grid-cols-2">
+              {collections.map(({ question }) => (
+                <QuestionCard key={question._id} {...question} />
+              ))}
+            </section>
+            <Pagination page={page} isNext={isNext || false} />
+          </div>
         )}
       />
     </>

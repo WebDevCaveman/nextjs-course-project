@@ -116,6 +116,15 @@ App shell is three siblings: left nav (`w-[266px]`, sticky, full height, own scr
 `main` (`flex-1 min-w-0`), right panel (`w-[350px]`, sticky, hidden below `xl`).
 Below `md` the left nav becomes a bottom bar. Neither side column scrolls with the page.
 
+**Anything placed directly in `body` needs `shrink-0`.** `body` is `flex min-h-full
+flex-col` and `ThemeProvider` renders its children with no DOM wrapper of its own, so the
+top bar and the three-column `div` are flex items **on the vertical axis** — where the
+default `flex-shrink: 1` applies to _height_. A height utility is `height`, never
+`min-height`, so it does not hold: give `body` a definite height smaller than its content
+and the item collapses to min-content. That is exactly how the `h-16` top bar once
+collapsed to 35px — the height of its logo tile — leaving a 29px gap above the sidebars,
+which stayed pinned at `top-16`. `shrink-0` costs nothing when nothing is squeezing.
+
 # Zasada zakresu
 
 Wykonuj tylko to, o co prosi użytkownik — nic ponad to. Jeśli polecenie wymaga dodatkowych działań (nowe pliki, zależności, refaktory, testy, konfiguracja), najpierw zapytaj o zgodę i zrób to dopiero po jej uzyskaniu. Żadnych własnych dodatków poza absolutnym minimum wymaganym do realizacji polecenia.

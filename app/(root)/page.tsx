@@ -9,6 +9,7 @@ import { getQuestions } from "@/lib/actions/question.action";
 import { DataRenderer } from "@/components/DataRenderer";
 import { EMPTY_QUESTIONS } from "@/constants/states";
 import { homeFilters } from "@/constants";
+import Pagination from "@/components/pagination/Pagination";
 
 interface SearchParams {
   searchParams: Promise<{ [key: string]: string }>;
@@ -23,7 +24,7 @@ const Home = async ({ searchParams }: SearchParams) => {
     pageSize: Number(pageSize) || 10,
   });
 
-  const { questions } = data || {};
+  const { questions, isNext } = data || {};
 
   return (
     <>
@@ -47,11 +48,14 @@ const Home = async ({ searchParams }: SearchParams) => {
         data={questions}
         empty={EMPTY_QUESTIONS}
         render={(data) => (
-          <section className="grid gap-10 min-[1920px]:grid-cols-2">
-            {data.map((question) => (
-              <QuestionCard key={question._id} {...question} />
-            ))}
-          </section>
+          <div className="flex flex-col gap-10">
+            <section className="grid gap-10 min-[1920px]:grid-cols-2">
+              {data.map((question) => (
+                <QuestionCard key={question._id} {...question} />
+              ))}
+            </section>
+            <Pagination page={page} isNext={isNext || false} />
+          </div>
         )}
       />
     </>

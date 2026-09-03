@@ -19,13 +19,6 @@ const Navbar = async () => {
     .slice(0, 2)
     .toUpperCase();
 
-  const avatar = (
-    <Avatar className="border-line size-8.5 border">
-      <AvatarImage src={session?.user?.image ?? undefined} alt={name ?? "User avatar"} />
-      <AvatarFallback>{initials || "DF"}</AvatarFallback>
-    </Avatar>
-  );
-
   return (
     <header className="border-line bg-background sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-6 border-b px-6">
       <Link href="/" className="text-fg hover:text-fg flex items-center gap-2.5">
@@ -48,12 +41,14 @@ const Navbar = async () => {
 
       <div className="flex items-center gap-3">
         <Theme />
-        {userId ? (
+
+        {userId && (
           <Link href={ROUTES.PROFILE(userId)} aria-label="Your profile">
-            {avatar}
+            <Avatar className="border-line size-8.5 border">
+              <AvatarImage src={session?.user?.image ?? undefined} alt={name ?? "User avatar"} />
+              <AvatarFallback>{initials || "DF"}</AvatarFallback>
+            </Avatar>
           </Link>
-        ) : (
-          avatar
         )}
         <MobileNavigation userId={userId} />
       </div>
