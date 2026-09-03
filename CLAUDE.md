@@ -134,3 +134,22 @@ Przy pisaniu kodu zawsze trzymaj się skilla `ponytail` — najprostsze rozwiąz
 # Komentarze w kodzie
 
 Gdy użytkownik o to poprosi, dodawaj prosty komentarz wyjaśniający działanie komponentu / funkcji / strony — po co powstał i co robi, tak żeby użytkownik rozumiał sens kodu. Bez pytania nie dodawaj komentarzy.
+
+# Smoke test po deployu (obowiązkowy)
+
+Push na `main` = auto-deploy na produkcję (https://nextjs-course-project-nine-eosin.vercel.app).
+Po **każdym** takim pushu, bez pytania:
+
+1. Uruchom **osobnego agenta w tle** (Agent tool, nie główny kontekst). Agent czeka, aż nowa
+   wersja jest live, potem robi smoke test produkcji w przeglądarce: strona główna, `/tags`,
+   `/community`, `/collection`, szczegóły pytania — brak 500, brak błędów w konsoli, kluczowe
+   elementy renderują się w obu motywach (`.dark` na `<html>`).
+2. Główna rozmowa **nie czeka** na wynik i nie dostaje logów. Pracuj dalej z użytkownikiem.
+3. Zielone → jedna linijka „deploy OK” w głównym oknie.
+4. Czerwone → agent (lub kolejny agent naprawczy) **sam** szuka przyczyny, naprawia, buduje
+   lokalnie (`npm run build`), pushuje fix i testuje ponownie. Użytkownik widzi to jako fakt
+   dokonany, nie jako pytanie.
+5. Do głównego okna trafia **tylko problem nierozwiązywalny** przez agenta — z opisem, co
+   próbował i na czym się wywalił.
+
+Na razie tylko smoke test. Żadnych Playwright/Vitest/Jest bez zgody użytkownika.
