@@ -75,3 +75,7 @@ export type AnswerVotesResponse = Record<string, "upvote" | "downvote">;
 export interface CollectionBaseParams {
   questionId: string;
 }
+
+export interface getUserParams {
+  userId: string;
+}
