@@ -172,27 +172,27 @@
    same chip; silver keeps the design's blue-grey rather than a flat neutral.
    Ours, not Figma's — tokens.css is generated, so these live here.
 
-   Light gold is amber-600, not amber-500: amber-500 on the amber-100 disc is
-   1.93:1, and the glyph washed out on production. amber-700 would clear 3:1
-   but lands on orange-700 — the bronze glyph — which is exactly what this
-   block set out to avoid. amber-600 is the darkest amber that still reads
-   gold; the tier is named in the label beside it, so the glyph is decorative. */
+   Values come from the design. Four of the six land on a palette step within
+   4/255 — imperceptible — so they go through the step and keep the project's
+   vocabulary. The two glyph colours that have no step are written out: gold is
+   40/255 bluer than amber-600, and bronze sits between orange-700 and -800.
+   This is the token-definition layer, the same place tokens.css writes literal
+   rgb(); no markup ever names a colour this way.
+
+   One set for both themes, by design: the disc is a fixed light chip that a
+   medal sits on, the same way the auth backdrop stays dark in both themes.
+   That keeps the glyph/disc contrast identical either way — gold 2.93:1,
+   silver 4.39, bronze 5.08. Gold is under the 3:1 non-text bar by a hair; it
+   is the design's own value, and the tier is named in the label beside the
+   disc, so the glyph carries no meaning on its own. No .dark pair to keep in
+   sync — do not add one back without new values from the design. */
 :root {
-  --medal-gold: var(--amber-600);
+  --medal-gold: rgb(203, 124, 46);
   --medal-gold-bg: var(--amber-100);
   --medal-silver: var(--slate-500);
-  --medal-silver-bg: var(--slate-200);
-  --medal-bronze: var(--orange-700);
+  --medal-silver-bg: var(--slate-100);
+  --medal-bronze: rgb(170, 66, 36);
   --medal-bronze-bg: var(--orange-100);
-}
-
-.dark {
-  --medal-gold: var(--amber-400);
-  --medal-gold-bg: var(--amber-950);
-  --medal-silver: var(--slate-400);
-  --medal-silver-bg: var(--slate-800);
-  --medal-bronze: var(--orange-400);
-  --medal-bronze-bg: var(--orange-950);
 }
 
 /* ══ Base layer ══ Styles unclassed semantic HTML. Do not re-declare these
