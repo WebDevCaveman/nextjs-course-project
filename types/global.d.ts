@@ -51,6 +51,7 @@ interface User {
   location?: string;
   portfolio?: string;
   reputation?: number;
+  createdAt: Date;
 }
 
 interface Collection {
@@ -59,6 +60,13 @@ interface Collection {
   author: Author;
 }
 
+interface BadgeCounts {
+  bronze: number;
+  silver: number;
+  gold: number;
+}
+
+// Typy powiazane z API
 type ActionResponse<T = null> = {
   success: boolean;
   data?: T;
@@ -69,7 +77,6 @@ type ActionResponse<T = null> = {
   status?: number;
 };
 
-// Typy powiazane z API
 type SuccessResponse<T = null> = ActionResponse<T> & { success: true };
 
 type ErrorResponse = ActionResponse<undefined> & { success: false };

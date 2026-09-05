@@ -9,7 +9,9 @@ const ROUTES = {
   SIGN_UP: "/sign-up",
   FORGOT_PASSWORD: "/forgot-password",
   SIGN_IN_WITH_OAUTH: "/signin-with-oauth",
-  PROFILE: (id?: string) => (id ? `/profile/${id}` : "/profile"),
+  BASIC_PROFILE: "/profile",
+  PROFILE_EDIT: "/profile/edit",
+  PROFILE: (id: string) => `/profile/${id}`,
   QUESTION: (id: string) => `/questions/${id}`,
   TAG: (id: string) => `/tags/${id}`,
 };
