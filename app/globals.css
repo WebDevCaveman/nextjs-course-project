@@ -170,9 +170,15 @@
 
 /* Medal tiers. Gold is amber and bronze is orange so the two never read as the
    same chip; silver keeps the design's blue-grey rather than a flat neutral.
-   Ours, not Figma's — tokens.css is generated, so these live here. */
+   Ours, not Figma's — tokens.css is generated, so these live here.
+
+   Light gold is amber-600, not amber-500: amber-500 on the amber-100 disc is
+   1.93:1, and the glyph washed out on production. amber-700 would clear 3:1
+   but lands on orange-700 — the bronze glyph — which is exactly what this
+   block set out to avoid. amber-600 is the darkest amber that still reads
+   gold; the tier is named in the label beside it, so the glyph is decorative. */
 :root {
-  --medal-gold: var(--amber-500);
+  --medal-gold: var(--amber-600);
   --medal-gold-bg: var(--amber-100);
   --medal-silver: var(--slate-500);
   --medal-silver-bg: var(--slate-200);
