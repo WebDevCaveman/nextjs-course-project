@@ -4,15 +4,34 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatRelativeTime } from "@/lib/time";
 import ROUTES from "@/constants/routes";
 import Link from "next/link";
+import ActionBtns from "../user/ActionBtns";
 
-const QuestionCard = ({ _id, title, tags, author, createdAt, upvotes, downvotes, answers, views }: Question) => {
+interface QuestionCardProps extends Question {
+  showActionBtns?: boolean;
+}
+
+const QuestionCard = ({
+  _id,
+  title,
+  tags,
+  author,
+  createdAt,
+  upvotes,
+  downvotes,
+  answers,
+  views,
+  showActionBtns = false,
+}: QuestionCardProps) => {
   return (
     <article className="border-line bg-background shadow-card hover:border-accent-solid flex flex-col gap-6 rounded-xl border p-5 md:p-9">
-      <h2>
-        <Link href={ROUTES.QUESTION(_id)} className="text-fg hover:text-accent-solid">
-          {title}
-        </Link>
-      </h2>
+      <div className="flex items-center justify-between gap-12">
+        <h2>
+          <Link href={ROUTES.QUESTION(_id)} className="text-fg hover:text-accent-solid">
+            {title}
+          </Link>
+        </h2>
+        {showActionBtns && <ActionBtns type="question" targetId={_id} />}
+      </div>
 
       <TagList tags={tags} inline />
 

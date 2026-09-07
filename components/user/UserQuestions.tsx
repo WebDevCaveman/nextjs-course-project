@@ -17,7 +17,7 @@ const UserQuestions = async ({ userId, page, pageSize }: ProfileTabsParams) => {
       render={(questions) => (
         <div className="flex flex-col gap-10">
           {questions.map((question) => (
-            <QuestionCard key={question._id} {...question} />
+            <QuestionCard key={question._id} {...question} showActionBtns={userId === question.author._id} />
           ))}
           <Pagination page={page} isNext={isNext || false} />
         </div>

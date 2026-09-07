@@ -15,9 +15,10 @@ interface Props extends ActionResponse<Answer[]> {
   // Jeden promise na cala strone odpowiedzi - powstaje w komponencie strony i tam tez
   // odpala jedno zapytanie do bazy. Brak promise'a (gosc) = zaden pasek glosowania.
   votesPromise?: Promise<ActionResponse<AnswerVotesResponse>>;
+  userId?: string;
 }
 
-const AllAnswers = ({ page, isNext, success, error, data, totalAnswers, votesPromise }: Props) => {
+const AllAnswers = ({ page, isNext, success, error, data, totalAnswers, votesPromise, userId }: Props) => {
   return (
     <section className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -52,6 +53,7 @@ const AllAnswers = ({ page, isNext, success, error, data, totalAnswers, votesPro
                       hasDownvoted: result.data?.[answer._id] === "downvote",
                     },
                   }))}
+                  showActionBtns={userId === answer.author._id}
                 />
               </Fragment>
             ))}

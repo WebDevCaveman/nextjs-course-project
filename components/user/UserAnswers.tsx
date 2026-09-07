@@ -22,7 +22,7 @@ const UserAnswers = async ({ userId, page, pageSize }: ProfileTabsParams) => {
             <Fragment key={answer._id}>
               {index > 0 && <Separator />}
 
-              <AnswerCard {...answer} lineClamp={2} />
+              <AnswerCard {...answer} lineClamp={2} showActionBtns={userId === answer.author._id} />
             </Fragment>
           ))}
           <Pagination page={page} isNext={isNext || false} />
