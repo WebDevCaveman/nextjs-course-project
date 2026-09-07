@@ -31,6 +31,7 @@ interface Answer {
   createdAt: string;
   upvotes: number;
   downvotes: number;
+  question?: Question;
 }
 
 interface Vote {
@@ -97,4 +98,9 @@ type PaginatedSearchParams = {
   query?: string;
   filter?: string;
   sort?: string;
+};
+
+type ProfileTabsParams = PaginatedSearchParams & {
+  tab?: string;
+  userId: string;
 };

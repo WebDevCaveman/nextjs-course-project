@@ -56,6 +56,16 @@ export const EMPTY_QUESTIONS = {
   },
 };
 
+export const EMPTY_USER_QUESTIONS = {
+  image: {
+    light: "/states/empty-questions-light.svg",
+    dark: "/states/empty-questions-dark.svg",
+    alt: "Empty questions state",
+  },
+  title: "Ahh, No Questions Yet!",
+  message: "This user hasn't asked any questions yet.",
+};
+
 export const EMPTY_TAGS = {
   image: {
     light: "/states/empty-tags-light.svg",
@@ -78,6 +88,16 @@ export const EMPTY_ANSWERS = {
   },
   title: "No Answers Found",
   message: "The answer board is empty. Make it rain with your brilliant answer.",
+};
+
+export const EMPTY_USER_ANSWERS = {
+  image: {
+    light: "/states/empty-answers-light.svg",
+    dark: "/states/empty-answers-dark.svg",
+    alt: "Empty answers state",
+  },
+  title: "Ohh, No Answers Yet!",
+  message: "This user hasn't provided any answers yet.",
 };
 
 export const EMPTY_COLLECTIONS = {
