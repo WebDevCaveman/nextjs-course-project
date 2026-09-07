@@ -75,7 +75,9 @@ const AnswerCard = ({
         return lineClamp ? <div className={CLAMP[lineClamp]}>{body}</div> : body;
       })()}
 
-      {question && (
+      {/* Tylko lista odpowiedzi na profilu populuje `question`; na stronie pytania
+          zostaje samo ObjectId - prawdziwe, ale bez tytulu i bez _id. */}
+      {question?.title && (
         <div className="text-fg-subtle mt-4 text-base">
           In response to:{" "}
           <Link href={ROUTES.QUESTION(question._id)} className="text-fg hover:text-accent-solid font-medium">
