@@ -9,6 +9,14 @@ export interface SignInWithOAuthParams {
   };
 }
 
+export interface PaginatedSearchParams {
+  page?: number;
+  pageSize?: number;
+  query?: string;
+  filter?: string;
+  sort?: string;
+}
+
 export interface AuthCredentials {
   name: string;
   username: string;
@@ -76,7 +84,7 @@ export interface CollectionBaseParams {
   questionId: string;
 }
 
-export interface getUserParams {
+export interface GetUserDetailsParams {
   userId: string;
 }
 

@@ -31,7 +31,7 @@ interface Answer {
   createdAt: string;
   upvotes: number;
   downvotes: number;
-  question?: Question;
+  question?: Pick<Question, "_id" | "title">;
 }
 
 interface Vote {

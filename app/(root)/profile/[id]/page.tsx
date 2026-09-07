@@ -31,7 +31,7 @@ const Profile = async ({ params, searchParams }: RouteParams) => {
         </div>
 
         <div className="lg:w-[330px] lg:shrink-0">
-          <UserTags />
+          <UserTags userId={user._id} />
         </div>
       </div>
     </>

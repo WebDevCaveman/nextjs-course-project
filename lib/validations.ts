@@ -145,7 +145,7 @@ export const CollectionBaseSchema = z.object({
   questionId: z.string().min(1, { message: "Question ID is required" }),
 });
 
-export const GetUserSchema = z.object({
+export const GetUserDetailsSchema = z.object({
   userId: z.string().min(1, { message: "User ID is required" }),
 });
 
