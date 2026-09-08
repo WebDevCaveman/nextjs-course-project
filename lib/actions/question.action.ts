@@ -9,10 +9,17 @@
 
 "use server";
 
-import { CreateQuestionParams, EditQuestionParams, GetQuestionParams, IncrementViewsParams } from "@/types/action";
+import {
+  CreateQuestionParams,
+  DeleteQuestionParams,
+  EditQuestionParams,
+  GetQuestionParams,
+  IncrementViewsParams,
+} from "@/types/action";
 import handleError from "../handlers/error";
 import {
   AskQuestionSchema,
+  DeleteQuestionSchema,
   EditQuestionSchema,
   GetQuestionSchema,
   IncrementViewsSchema,
@@ -28,6 +35,10 @@ import { NotFoundError, UnauthorizedError } from "../http-errors";
 import { escapeRegExp } from "../utils";
 import { homeFilters } from "@/constants";
 import dbConnect from "../mongoose";
+import { revalidatePath } from "next/cache";
+import Answer from "@/database/answer.model";
+import Collection from "@/database/collection.model";
+import { Vote, Interaction } from "@/database";
 
 export const createQuestion = async (params: CreateQuestionParams): Promise<ActionResponse<Question>> => {
   const validationResult = await action({ params, schema: AskQuestionSchema, authorize: true });
@@ -270,5 +281,51 @@ export const getHotQuestions = async (): Promise<ActionResponse<Question[]>> => 
     return { success: true, data: JSON.parse(JSON.stringify(questions)) };
   } catch (error) {
     return handleError(error) as ErrorResponse;
+  }
+};
+
+export const deleteQuestion = async (params: DeleteQuestionParams): Promise<ActionResponse> => {
+  const validationResult = await action({ params, schema: DeleteQuestionSchema, authorize: true });
+
+  if (validationResult instanceof Error) {
+    return handleError(validationResult) as ErrorResponse;
+  }
+
+  const { questionId } = validationResult.params!;
+  const userId = validationResult.session?.user?.id;
+  if (!userId) return handleError(new UnauthorizedError()) as ErrorResponse;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const question = await Question.findById(questionId).session(session);
+
+    if (!question) throw new NotFoundError("Question");
+    if (question.author._id.toString() !== userId) throw new UnauthorizedError();
+
+    const answerIds = (await Answer.find({ question: questionId }).select("_id").session(session)).map((a) => a._id);
+
+    await Collection.deleteMany({ question: questionId }).session(session);
+    await TagQuestion.deleteMany({ question: questionId }).session(session);
+    await Tag.updateMany({ _id: { $in: question.tags } }, { $inc: { questions: -1 } }, { session });
+    await Vote.deleteMany({ id: questionId, type: "question" }).session(session);
+    await Vote.deleteMany({ id: { $in: answerIds }, type: "answer" }).session(session);
+    await Interaction.deleteMany({ actionId: questionId, actionType: "question" }).session(session);
+    await Interaction.deleteMany({ actionId: { $in: answerIds }, actionType: "answer" }).session(session);
+    await Answer.deleteMany({ _id: { $in: answerIds } }).session(session);
+    await question.deleteOne({ session });
+
+    await session.commitTransaction();
+
+    // Musimy wykorzystac taki zapis poniewaz lista tagow wyswietla sie w RightSidebar a on z kolei umieszczony jest w layout a nie na konkretnej stronie. Dodatkowo taki zapis odswiezy nam wszystkie strony korzystajace z layout - a wiec takze strone porfile i collections
+    revalidatePath("/(root)", "layout");
+
+    return { success: true };
+  } catch (error) {
+    await session.abortTransaction();
+    return handleError(error) as ErrorResponse;
+  } finally {
+    await session.endSession();
   }
 };

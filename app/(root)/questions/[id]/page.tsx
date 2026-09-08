@@ -45,7 +45,7 @@ const QuestionDetails = async ({ params, searchParams }: RouteParams) => {
 
   const { data: question, success } = await getQuestion({ questionId: id });
 
-  if (!success || !question) redirect("/404");
+  if (!success || !question) notFound();
 
   const {
     success: answersSuccess,

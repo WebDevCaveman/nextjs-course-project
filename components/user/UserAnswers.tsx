@@ -5,10 +5,13 @@ import Pagination from "../pagination/Pagination";
 import AnswerCard from "../cards/AnswerCard";
 import { Fragment } from "react";
 import { Separator } from "../ui/separator";
+import { auth } from "@/auth";
 
 const UserAnswers = async ({ userId, page, pageSize }: ProfileTabsParams) => {
   const { success, data, error } = await getUserAnswers({ userId, page, pageSize });
   const { answers, isNext } = data || {};
+  const session = await auth();
+  const loggedInUserId = session?.user?.id;
 
   return (
     <DataRenderer
@@ -22,7 +25,7 @@ const UserAnswers = async ({ userId, page, pageSize }: ProfileTabsParams) => {
             <Fragment key={answer._id}>
               {index > 0 && <Separator />}
 
-              <AnswerCard {...answer} lineClamp={2} showActionBtns={userId === answer.author._id} />
+              <AnswerCard {...answer} lineClamp={2} showActionBtns={loggedInUserId === answer.author._id} />
             </Fragment>
           ))}
           <Pagination page={page} isNext={isNext || false} />

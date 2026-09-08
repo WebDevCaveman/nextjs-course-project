@@ -91,3 +91,11 @@ export interface GetUserDetailsParams {
 export interface GetUserQuestionsAndAnswersParams extends Omit<PaginatedSearchParams, "query" | "filter" | "sort"> {
   userId: string;
 }
+
+export interface DeleteQuestionParams {
+  questionId: string;
+}
+
+export interface DeleteAnswerParams {
+  answerId: string;
+}

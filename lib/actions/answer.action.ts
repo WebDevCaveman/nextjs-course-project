@@ -1,15 +1,16 @@
 "use server";
 
-import { CreateAnswerParams, GetAnswersParams } from "@/types/action";
+import { CreateAnswerParams, DeleteAnswerParams, GetAnswersParams } from "@/types/action";
 import action from "../handlers/action";
 import handleError from "../handlers/error";
-import { AnswerServerSchema, GetAnswersSchema } from "../validations";
+import { AnswerServerSchema, DeleteAnswerSchema, GetAnswersSchema } from "../validations";
 import mongoose from "mongoose";
-import { Answer, Question } from "@/database";
+import { Answer, Interaction, Question, Vote } from "@/database";
 import ROUTES from "@/constants/routes";
 import { revalidatePath } from "next/cache";
 import { IUserDoc } from "@/database/user.model";
 import { answersFilters } from "@/constants";
+import { NotFoundError, UnauthorizedError } from "../http-errors";
 
 export const createAnswer = async (params: CreateAnswerParams): Promise<ActionResponse<Answer>> => {
   const validationResult = await action({ params, schema: AnswerServerSchema, authorize: true });
@@ -98,5 +99,45 @@ export const getAnswers = async (
     return { success: true, data: { answers: JSON.parse(JSON.stringify(answers)), isNext, totalAnswers } };
   } catch (error) {
     return handleError(error) as ErrorResponse;
+  }
+};
+
+export const deleteAnswer = async (params: DeleteAnswerParams): Promise<ActionResponse> => {
+  const validationResult = await action({ params, schema: DeleteAnswerSchema, authorize: true });
+
+  if (validationResult instanceof Error) {
+    return handleError(validationResult) as ErrorResponse;
+  }
+
+  const { answerId } = validationResult.params!;
+  const userId = validationResult.session?.user?.id;
+  if (!userId) return handleError(new UnauthorizedError()) as ErrorResponse;
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const answer = await Answer.findById(answerId).session(session);
+
+    if (!answer) throw new NotFoundError("Answer");
+    if (answer.author._id.toString() !== userId) throw new UnauthorizedError();
+
+    const question = await Question.findByIdAndUpdate(answer.question, { $inc: { answers: -1 } }, { session });
+
+    await Vote.deleteMany({ id: answerId, type: "answer" }, { session });
+    await Interaction.deleteMany({ actionId: answerId, actionType: "answer" }, { session });
+    await answer.deleteOne({ session });
+
+    await session.commitTransaction();
+
+    revalidatePath(ROUTES.PROFILE(userId));
+    if (question) revalidatePath(ROUTES.QUESTION(question._id.toString()));
+
+    return { success: true };
+  } catch (error) {
+    await session.abortTransaction();
+    return handleError(error) as ErrorResponse;
+  } finally {
+    await session.endSession();
   }
 };

@@ -14,8 +14,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import ROUTES from "@/constants/routes";
+import { deleteQuestion } from "@/lib/actions/question.action";
+import { deleteAnswer } from "@/lib/actions/answer.action";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useState } from "react";
 
 interface ActionBtnsProps {
   type: "question" | "answer";
@@ -23,13 +26,33 @@ interface ActionBtnsProps {
 }
 
 const ActionBtns = ({ type, targetId }: ActionBtnsProps) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
   const handleDelete = async () => {
-    if (type === "question") {
-      // Call API to delete question
-      toast.success("Question deleted successfully");
-    } else if (type === "answer") {
-      // Call API to delete answer
-      toast.success("Answer deleted successfully");
+    setIsLoading(true);
+    try {
+      if (type === "question") {
+        const { success } = await deleteQuestion({ questionId: targetId });
+        if (success) {
+          toast.success("Question deleted successfully");
+          setIsOpen(false);
+        } else {
+          toast.error(`Failed to delete the ${type}`);
+        }
+      } else if (type === "answer") {
+        const { success } = await deleteAnswer({ answerId: targetId });
+        if (success) {
+          toast.success("Answer deleted successfully");
+          setIsOpen(false);
+        } else {
+          toast.error(`Failed to delete the ${type}`);
+        }
+      }
+    } catch (error) {
+      toast.error(`${error instanceof Error ? error.message : "Failed to delete the " + type}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -41,7 +64,7 @@ const ActionBtns = ({ type, targetId }: ActionBtnsProps) => {
         </Link>
       </Button>
 
-      <Dialog>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
           <Button variant="icon" size="icon" aria-label={`Delete ${type}`}>
             <HugeIconSvg icon={uiIcons.trash} size={16} />
@@ -63,8 +86,8 @@ const ActionBtns = ({ type, targetId }: ActionBtnsProps) => {
               </Button>
             </DialogClose>
 
-            <Button variant="primary" size="sm" onClick={handleDelete}>
-              Delete
+            <Button variant="primary" size="sm" onClick={handleDelete} disabled={isLoading}>
+              {isLoading ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>
