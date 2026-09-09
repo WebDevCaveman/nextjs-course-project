@@ -61,10 +61,10 @@ interface Collection {
   author: Author;
 }
 
-interface BadgeCounts {
-  bronze: number;
-  silver: number;
-  gold: number;
+interface Badges {
+  GOLD: number;
+  SILVER: number;
+  BRONZE: number;
 }
 
 // Typy powiazane z API

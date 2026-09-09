@@ -3,7 +3,7 @@ import { HugeIcon } from "@/components/icons/huge";
 interface StatsProps {
   totalQuestions: number;
   totalAnswers: number;
-  badges: BadgeCounts;
+  badges: Badges;
   reputationPoints: number;
 }
 
@@ -11,9 +11,9 @@ interface StatsProps {
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
 
 const BADGE_TIERS = [
-  { key: "gold", label: "Gold Badges", tint: "bg-gold-bg text-gold" },
-  { key: "silver", label: "Silver Badges", tint: "bg-silver-bg text-silver" },
-  { key: "bronze", label: "Bronze Badges", tint: "bg-bronze-bg text-bronze" },
+  { key: "GOLD", label: "Gold Badges", tint: "bg-gold-bg text-gold" },
+  { key: "SILVER", label: "Silver Badges", tint: "bg-silver-bg text-silver" },
+  { key: "BRONZE", label: "Bronze Badges", tint: "bg-bronze-bg text-bronze" },
 ] as const;
 
 const Stats = ({ totalQuestions, totalAnswers, badges, reputationPoints }: StatsProps) => {
@@ -33,7 +33,7 @@ const Stats = ({ totalQuestions, totalAnswers, badges, reputationPoints }: Stats
             { value: totalQuestions, label: "Questions" },
             { value: totalAnswers, label: "Answers" },
           ].map(({ value, label }) => (
-            <div key={label} className="flex flex-col items-center gap-1.5">
+            <div key={label} className="flex flex-col items-center justify-center gap-1.5">
               <span className="text-2xl font-semibold tabular-nums">{compact.format(value)}</span>
               <span className="text-fg-subtle text-sm">{label}</span>
             </div>

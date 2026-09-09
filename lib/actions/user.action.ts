@@ -4,7 +4,7 @@ import { ClientSession, Types, type PipelineStage, type QueryFilter } from "mong
 import action from "../handlers/action";
 import handleError from "../handlers/error";
 import { GetUserQuestionsAndAnswersSchema, GetUserDetailsSchema, PaginatedSearchParamsSchema } from "../validations";
-import { escapeRegExp } from "../utils";
+import { assignBadges, escapeRegExp } from "../utils";
 import { User, Question, Answer } from "@/database";
 import { usersFilters } from "@/constants";
 import { GetUserDetailsParams, GetUserQuestionsAndAnswersParams, UpdateUserReputationParams } from "@/types/action";
@@ -60,9 +60,7 @@ export const getUsers = async (
   }
 };
 
-export const getUser = async (
-  params: GetUserDetailsParams
-): Promise<ActionResponse<{ user: User; totalQuestions: number; totalAnswers: number }>> => {
+export const getUser = async (params: GetUserDetailsParams): Promise<ActionResponse<{ user: User }>> => {
   const validationResult = await action({ params, schema: GetUserDetailsSchema });
 
   if (validationResult instanceof Error) {
@@ -75,10 +73,7 @@ export const getUser = async (
     const user = await User.findById(userId).lean();
     if (!user) throw new NotFoundError("User");
 
-    const totalQuestions = await Question.countDocuments({ author: userId });
-    const totalAnswers = await Answer.countDocuments({ author: userId });
-
-    return { success: true, data: { user: JSON.parse(JSON.stringify(user)), totalQuestions, totalAnswers } };
+    return { success: true, data: { user: JSON.parse(JSON.stringify(user)) } };
   } catch (error) {
     return handleError(error) as ErrorResponse;
   }
@@ -214,3 +209,68 @@ export const updateUserReputation = async (
       { session }
     );
 };
+
+export async function getUserStats(params: GetUserDetailsParams): Promise<
+  ActionResponse<{
+    totalQuestions: number;
+    totalAnswers: number;
+    badges: Badges;
+  }>
+> {
+  const validationResult = await action({
+    params,
+    schema: GetUserDetailsSchema,
+  });
+
+  if (validationResult instanceof Error) {
+    return handleError(validationResult) as ErrorResponse;
+  }
+
+  const { userId } = validationResult.params!;
+
+  try {
+    const [questionStats = { count: 0, upvotes: 0, views: 0 }] = await Question.aggregate([
+      { $match: { author: new Types.ObjectId(userId) } },
+      {
+        $group: {
+          _id: null,
+          count: { $sum: 1 },
+          upvotes: { $sum: "$upvotes" },
+          views: { $sum: "$views" },
+        },
+      },
+    ]);
+
+    const [answerStats = { count: 0, upvotes: 0 }] = await Answer.aggregate([
+      { $match: { author: new Types.ObjectId(userId) } },
+      {
+        $group: {
+          _id: null,
+          count: { $sum: 1 },
+          upvotes: { $sum: "$upvotes" },
+        },
+      },
+    ]);
+
+    const badges = assignBadges({
+      criteria: [
+        { type: "ANSWER_COUNT", count: answerStats.count },
+        { type: "QUESTION_COUNT", count: questionStats.count },
+        { type: "QUESTION_UPVOTES", count: questionStats.upvotes },
+        { type: "ANSWER_UPVOTES", count: answerStats.upvotes },
+        { type: "TOTAL_VIEWS", count: questionStats.views },
+      ],
+    });
+
+    return {
+      success: true,
+      data: {
+        totalQuestions: questionStats.count,
+        totalAnswers: answerStats.count,
+        badges,
+      },
+    };
+  } catch (error) {
+    return handleError(error) as ErrorResponse;
+  }
+}
