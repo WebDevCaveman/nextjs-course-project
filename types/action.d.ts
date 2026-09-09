@@ -132,3 +132,11 @@ interface RecommendationParams {
   skip: number;
   limit: number;
 }
+
+export interface UpdateUserParams {
+  name: string;
+  username: string;
+  bio?: string;
+  location?: string;
+  portfolio?: string;
+}

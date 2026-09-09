@@ -3,11 +3,23 @@
 import { ClientSession, Types, type PipelineStage, type QueryFilter } from "mongoose";
 import action from "../handlers/action";
 import handleError from "../handlers/error";
-import { GetUserQuestionsAndAnswersSchema, GetUserDetailsSchema, PaginatedSearchParamsSchema } from "../validations";
+import {
+  GetUserQuestionsAndAnswersSchema,
+  GetUserDetailsSchema,
+  PaginatedSearchParamsSchema,
+  EditProfileSchema,
+} from "../validations";
 import { assignBadges, escapeRegExp } from "../utils";
 import { User, Question, Answer } from "@/database";
 import { usersFilters } from "@/constants";
-import { GetUserDetailsParams, GetUserQuestionsAndAnswersParams, UpdateUserReputationParams } from "@/types/action";
+import {
+  GetUserDetailsParams,
+  GetUserQuestionsAndAnswersParams,
+  UpdateUserParams,
+  UpdateUserReputationParams,
+} from "@/types/action";
+import { revalidatePath } from "next/cache";
+import ROUTES from "@/constants/routes";
 import { NotFoundError } from "../http-errors";
 import { ITagDoc } from "@/database/tag.model";
 import { IUserDoc } from "@/database/user.model";
@@ -274,3 +286,24 @@ export async function getUserStats(params: GetUserDetailsParams): Promise<
     return handleError(error) as ErrorResponse;
   }
 }
+
+export const updateUser = async (params: UpdateUserParams): Promise<ActionResponse<User>> => {
+  const validationResult = await action({ params, schema: EditProfileSchema, authorize: true });
+
+  if (validationResult instanceof Error) {
+    return handleError(validationResult) as ErrorResponse;
+  }
+
+  const userId = validationResult.session!.user!.id!;
+
+  try {
+    const user = await User.findByIdAndUpdate(userId, validationResult.params!, { new: true }).lean();
+    if (!user) throw new NotFoundError("User");
+
+    revalidatePath(ROUTES.PROFILE(userId));
+
+    return { success: true, data: JSON.parse(JSON.stringify(user)) };
+  } catch (error) {
+    return handleError(error) as ErrorResponse;
+  }
+};

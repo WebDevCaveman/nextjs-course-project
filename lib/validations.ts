@@ -184,3 +184,7 @@ export const UpdateUserReputationSchema = z.object({
   authorId: z.string().optional(),
   interaction: z.enum(INTERACTIONS, { message: "Interaction must be a valid interaction type" }),
 });
+
+export const EditProfileSchema = UserSchema.pick({ name: true, username: true, bio: true, location: true }).extend({
+  portfolio: UserSchema.shape.portfolio.or(z.literal("")),
+});
