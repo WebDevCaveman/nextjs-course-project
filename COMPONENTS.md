@@ -34,6 +34,7 @@ same table's other half: which shadcn component, which variant, verbatim, every 
 | Overflow / kebab menu                           | `DropdownMenu`       | default                            |                                                                                                         |
 | Confirm / form modal                            | `Dialog`             | default                            |                                                                                                         |
 | Mobile nav / filter drawer                      | `Sheet`              | default                            |                                                                                                         |
+| Panel anchored to a field (global search)       | `Popover`            | `PopoverContent variant="panel"`   | Anchored with `PopoverAnchor`, not `PopoverTrigger` — the field stays typable, see §Global search below  |
 | Hover hint on icon-only controls                | `Tooltip`            | default                            |                                                                                                         |
 | Loading placeholder                             | `Skeleton`           | default                            |                                                                                                         |
 | Toast on submit/error                           | `Sonner` (`toast()`) | default                            |                                                                                                         |
@@ -43,7 +44,9 @@ same table's other half: which shadcn component, which variant, verbatim, every 
 | Field group (label + control + hint/error)      | `Field`              | patched default (see §Field below) | `FieldGroup` stacks them; `FieldError` replaces the `<small class="text-danger">` in the recipe         |
 
 **Not used — build local instead, nothing to install:** `Form` (`Field` +
-react-hook-form's `Controller` covers it), `Command`/`Combobox`,
+react-hook-form's `Controller` covers it), `Command`/`Combobox` (its client-side
+filtering duplicates what Mongo already does for us — the global search panel is
+`Popover` + our own rows),
 `Calendar`/`DatePicker`, `Chart`, `Table` (base-layer `<table>` covers it).
 If a screen seems to need one of these, ask before installing it.
 
@@ -53,7 +56,7 @@ If a screen seems to need one of these, ask before installing it.
 
     npx shadcn@latest add button input textarea select label badge avatar
         separator tabs dropdown-menu dialog sheet tooltip skeleton sonner
-        card field
+        card field popover
 
 This is the full set used across the 24 screens, plus a small margin (`sheet`,
 `tooltip`, `skeleton`, `sonner`) for near-term screens that reuse the same patterns.
@@ -260,6 +263,42 @@ construction — the base layer no longer touches form fields at all (see global
                tool  size-[30px] rounded-md text-fg-subtle hover:bg-muted hover:text-fg
                      → local button, not shadcn Button (icon-only toolbar toggle)
                area  `<Textarea variant="unstyled" />`
+
+    global     wrap  flex max-w-[830px] flex-1 justify-end md:justify-start
+               field flex items-center gap-3 h-12 px-4 rounded-[10px] bg-subtle
+                     border border-transparent focus-within:border-accent-solid
+                     — `hidden w-full md:block` inside `<PopoverAnchor asChild>`
+               icon  uiIcons.search 20px text-fg-subtle
+               input `<Input variant="unstyled" className="flex-1" />`,
+                     placeholder "Search anything globally"
+               below md the field is replaced by `<Button variant="icon" size="icon">`
+               opening a `<Sheet side="top">` holding the same field and panel
+
+---
+
+## Global search panel — shadcn `Popover`, `panel` variant
+
+    content    `<PopoverContent variant="panel" align="start">`
+               border-line bg-background shadow-card flex flex-col gap-5 rounded-xl
+               border p-5 w-(--radix-popover-trigger-width)
+    type row   flex flex-wrap items-center gap-2.5, label a bare `<small>`
+               pill  h-[30px] px-3.5 rounded-md text-[13px] capitalize
+               idle  bg-muted text-fg-muted font-medium
+               activ bg-accent-solid text-white font-semibold   ← flat, not gradient
+    heading    bare `<small>` ("Top Match")
+    list       ul flex flex-col gap-1 pl-0 list-none
+               row   Link flex items-center gap-2.5 px-2 py-2.5 rounded-md
+                     hover:bg-muted text-fg
+               icon  uiIcons.tag 16px text-fg-subtle shrink-0
+               title flex-1 truncate text-base font-medium
+               kind  text-sm text-info capitalize shrink-0
+    loading    three `<Skeleton className="h-[41px] rounded-md" />`
+    empty      bare `<p>` ("No results found")
+
+The panel is anchored, never triggered: `<PopoverAnchor asChild>` wraps the field so
+the input keeps focus, `onOpenAutoFocus` is prevented, and `onInteractOutside` is
+prevented while the pointer is inside the field — otherwise clicking back into the
+input closes the panel Radix just opened. Open state is `isOpen && search.length > 0`.
 
 ---
 

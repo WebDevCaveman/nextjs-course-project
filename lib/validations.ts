@@ -188,3 +188,8 @@ export const UpdateUserReputationSchema = z.object({
 export const EditProfileSchema = UserSchema.pick({ name: true, username: true, bio: true, location: true }).extend({
   portfolio: UserSchema.shape.portfolio.or(z.literal("")),
 });
+
+export const GlobalSearchSchema = z.object({
+  query: z.string().min(1, { message: "Query is required" }),
+  type: z.enum(["question", "answer", "user", "tag"]).optional(),
+});

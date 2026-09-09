@@ -140,3 +140,8 @@ export interface UpdateUserParams {
   location?: string;
   portfolio?: string;
 }
+
+export interface GlobalSearchParams {
+  query: string;
+  type?: GlobalSearchType;
+}

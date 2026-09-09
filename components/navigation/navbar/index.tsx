@@ -6,6 +6,7 @@ import Theme from "./Theme";
 import MobileNavigation from "./MobileNavigation";
 import { auth } from "@/auth";
 import ROUTES from "@/constants/routes";
+import GlobalSearch from "@/components/search/GlobalSearch";
 
 const Navbar = async () => {
   const session = await auth();
@@ -37,7 +38,7 @@ const Navbar = async () => {
         </span>
       </Link>
 
-      <p>Global Search</p>
+      <GlobalSearch />
 
       <div className="flex items-center gap-3">
         <Theme />

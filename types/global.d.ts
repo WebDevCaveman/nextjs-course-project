@@ -108,3 +108,11 @@ type ProfileTabsParams = PaginatedSearchParams & {
   tab?: string;
   userId: string;
 };
+
+type GlobalSearchType = "question" | "answer" | "user" | "tag";
+
+interface GlobalSearchResult {
+  id: string;
+  title: string;
+  type: GlobalSearchType;
+}
