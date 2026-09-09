@@ -15,6 +15,7 @@ import {
   EditQuestionParams,
   GetQuestionParams,
   IncrementViewsParams,
+  RecommendationParams,
 } from "@/types/action";
 import handleError from "../handlers/error";
 import {
@@ -26,7 +27,7 @@ import {
   PaginatedSearchParamsSchema,
 } from "../validations";
 import action from "../handlers/action";
-import mongoose, { QueryFilter } from "mongoose";
+import mongoose, { QueryFilter, Types } from "mongoose";
 import Question, { IQuestion } from "@/database/question.model";
 import Tag, { ITagDoc } from "@/database/tag.model";
 import { IUserDoc } from "@/database/user.model";
@@ -41,6 +42,7 @@ import Collection from "@/database/collection.model";
 import { Vote, Interaction } from "@/database";
 import { createInteraction } from "./interaction.action";
 import { after } from "next/server";
+import { auth } from "@/auth";
 
 export const createQuestion = async (params: CreateQuestionParams): Promise<ActionResponse<Question>> => {
   const validationResult = await action({ params, schema: AskQuestionSchema, authorize: true });
@@ -218,6 +220,62 @@ export const getQuestion = async (params: GetQuestionParams): Promise<ActionResp
   }
 };
 
+const getRecommendedQuestions = async function ({ userId, query, skip, limit }: RecommendationParams) {
+  const interactions = await Interaction.find({
+    user: new Types.ObjectId(userId),
+    actionType: "question",
+    action: { $in: ["question_post", "upvote_add", "downvote_add", "bookmark_add", "view"] },
+  })
+    .sort({ createdAt: -1 })
+    .limit(50)
+    .lean();
+
+  const interactedQuestionIds = interactions.map((i) => i.actionId);
+
+  // Wyciagamy tagi z pytan, z ktorymi uzytkownik wchodzil w interakcje
+  const interactedQuestions = await Question.find({
+    _id: { $in: interactedQuestionIds },
+  }).select("tags");
+
+  // Zawezamy tagi do unikalnych wartosci
+  const allTags = interactedQuestions.flatMap((q) => q.tags.map((tag: Types.ObjectId) => tag.toString()));
+
+  // Usuwamy duplikaty
+  const uniqueTagIds = [...new Set(allTags)];
+
+  const recommendedQuery: QueryFilter<typeof Question> = {
+    // wyrzucamy pytania, z ktorymi uzytkownik juz wchodzil w interakcje
+    _id: { $nin: interactedQuestionIds },
+    // wyrzucamy wlasne pytania uzytkownika
+    author: { $ne: new Types.ObjectId(userId) },
+    // uwzgledniamy pytania z dowolnym z unikalnych tagow
+    tags: { $in: uniqueTagIds.map((id) => new Types.ObjectId(id)) },
+  };
+
+  if (query) {
+    const search = escapeRegExp(query);
+    recommendedQuery.$or = [
+      { title: { $regex: search, $options: "i" } },
+      { content: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  const total = await Question.countDocuments(recommendedQuery);
+
+  const questions = await Question.find(recommendedQuery)
+    .populate("tags", "name")
+    .populate("author", "name image")
+    .sort({ upvotes: -1, views: -1 }) // prioritizing engagement
+    .skip(skip)
+    .limit(limit)
+    .lean();
+
+  return {
+    questions: JSON.parse(JSON.stringify(questions)),
+    isNext: total > skip + questions.length,
+  };
+};
+
 export const getQuestions = async (
   params: PaginatedSearchParams
 ): Promise<ActionResponse<{ questions: Question[]; isNext: boolean }>> => {
@@ -232,7 +290,21 @@ export const getQuestions = async (
   const skip = (page - 1) * pageSize;
 
   if (filter === "recommended") {
-    return { success: true, data: { questions: [], isNext: false } }; // Placeholder for recommended questions logic
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return { success: true, data: { questions: [], isNext: false } };
+    }
+
+    const recommended = await getRecommendedQuestions({
+      userId,
+      query,
+      skip,
+      limit: pageSize,
+    });
+
+    return { success: true, data: recommended };
   }
 
   if (query) {
@@ -288,12 +360,15 @@ export const incrementViews = async (params: IncrementViewsParams): Promise<Acti
     const question = await Question.findByIdAndUpdate(questionId, { $inc: { views: 1 } }, { returnDocument: "after" });
     if (!question) throw new NotFoundError("Question");
 
+    // Zapisujemy upsert wprost, a nie przez createInteraction: ta akcja wola auth(),
+    // a incrementViews leci z after() w Server Component, gdzie headers() jest zabronione.
+    // userId jest juz rozwiazany na stronie, przed after(), a "view" nie ma punktow.
     if (userId) {
-      await createInteraction({
-        action: "view",
-        actionTarget: "question",
-        actionId: questionId,
-      });
+      await Interaction.updateOne(
+        { user: userId, action: "view", actionId: questionId },
+        { $setOnInsert: { actionType: "question" } },
+        { upsert: true }
+      );
     }
 
     return { success: true, data: { views: question.views } };

@@ -116,3 +116,10 @@ export interface UpdateUserReputationParams {
   authorId?: string; // User who owns the content
   interaction: ScoredInteraction;
 }
+
+interface RecommendationParams {
+  userId: string;
+  query?: string;
+  skip: number;
+  limit: number;
+}
