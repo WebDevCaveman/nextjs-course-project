@@ -1,11 +1,12 @@
+import { auth } from "@/auth";
 import QuestionCard from "@/components/cards/QuestionCard";
-import { DataRenderer } from "@/components/DataRenderer";
+import { DataRenderer, StateSkeleton } from "@/components/DataRenderer";
 import PageFilter from "@/components/filters/PageFilter";
 import Pagination from "@/components/pagination/Pagination";
 import LocalSearch from "@/components/search/LocalSearch";
 import { collectionsFilters } from "@/constants";
 import ROUTES from "@/constants/routes";
-import { EMPTY_COLLECTIONS } from "@/constants/states";
+import { DEFAULT_DENIED, EMPTY_COLLECTIONS } from "@/constants/states";
 import { getSavedQuestions } from "@/lib/actions/collection.action";
 
 interface SearchParams {
@@ -13,6 +14,9 @@ interface SearchParams {
 }
 
 const Collections = async ({ searchParams }: SearchParams) => {
+  const session = await auth();
+  const userId = session?.user?.id;
+
   const { query, filter, page, pageSize } = await searchParams;
   const { success, data, error } = await getSavedQuestions({
     query: query || "",
@@ -38,22 +42,26 @@ const Collections = async ({ searchParams }: SearchParams) => {
 
       <PageFilter filters={collectionsFilters} />
 
-      <DataRenderer
-        success={success}
-        error={error}
-        data={collections}
-        empty={EMPTY_COLLECTIONS}
-        render={(collections) => (
-          <div className="flex flex-col gap-10">
-            <section className="grid gap-10 min-[1920px]:grid-cols-2">
-              {collections.map(({ question }) => (
-                <QuestionCard key={question._id} {...question} />
-              ))}
-            </section>
-            <Pagination page={page} isNext={isNext || false} />
-          </div>
-        )}
-      />
+      {userId ? (
+        <DataRenderer
+          success={success}
+          error={error}
+          data={collections}
+          empty={EMPTY_COLLECTIONS}
+          render={(collections) => (
+            <div className="flex flex-col gap-10">
+              <section className="grid gap-10 min-[1920px]:grid-cols-2">
+                {collections.map(({ question }) => (
+                  <QuestionCard key={question._id} {...question} />
+                ))}
+              </section>
+              <Pagination page={page} isNext={isNext || false} />
+            </div>
+          )}
+        />
+      ) : (
+        <StateSkeleton {...DEFAULT_DENIED} />
+      )}
     </>
   );
 };
