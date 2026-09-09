@@ -1,7 +1,7 @@
 const ROUTES = {
   HOME: "/",
   COLLECTIONS: "/collections",
-  JOBS: "/jobs",
+  // JOBS: "/jobs",
   TAGS: "/tags",
   COMMUNITY: "/community",
   ASK_QUESTION: "/ask-question",

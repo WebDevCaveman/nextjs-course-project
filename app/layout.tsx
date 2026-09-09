@@ -7,7 +7,7 @@ import { SessionProvider } from "next-auth/react";
 import { auth } from "@/auth";
 
 export const metadata: Metadata = {
-  title: "DevFlow",
+  title: "DevFlow - StackOverflow Clone Built with Next.js",
   description:
     "A community-driven platform for asking and answering programming questions. Get help, share knowledge, and collaborate with developers from around the world. Explore topics in web development, mobile app development, algorithms, data structures, and more.",
   manifest: "/brand/site.webmanifest",
