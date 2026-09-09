@@ -1,0 +1,302 @@
+[
+  {
+    "id": "b2-01",
+    "title": "Goroutine leaks when ctx is cancelled but the worker blocks sending on an unbuffered channel",
+    "content": "I have a fan-out worker in Go 1.23 that produces values on an unbuffered channel. The consumer stops reading early, and I assumed cancelling the context would let the producer goroutine finish.\n\n```\nfunc worker(ctx context.Context, out chan<- int) {\n\tfor i := 0; i < 10; i++ {\n\t\tout <- i\n\t}\n}\n\nfunc main() {\n\tctx, cancel := context.WithCancel(context.Background())\n\tout := make(chan int)\n\tgo worker(ctx, out)\n\n\tfmt.Println(<-out)\n\tcancel()\n\ttime.Sleep(500 * time.Millisecond)\n\tfmt.Println(runtime.NumGoroutine())\n}\n```\n\nI expected 1 goroutine after `cancel()`, I get 2, and a goroutine dump from `pprof.Lookup(\"goroutine\")` shows the worker parked in `chan send`. The context is definitely cancelled — `ctx.Err()` returns `context.Canceled` in the same program. Why does cancelling the context not unblock a send that nobody is reading, and what is the correct shape for this loop?",
+    "tags": ["go"]
+  },
+  {
+    "id": "b2-02",
+    "title": "go vet says 'passes lock by value' and my counter loses increments after a value receiver",
+    "content": "I refactored a small counter and changed the method receiver from a pointer to a value because the method looked read-mostly. Now the final count is wrong and `go vet` complains.\n\n```\ntype Counter struct {\n\tmu sync.Mutex\n\tn  int\n}\n\nfunc (c Counter) Inc() {\n\tc.mu.Lock()\n\tdefer c.mu.Unlock()\n\tc.n++\n}\n```\n\nWith 1000 goroutines calling `Inc()` and a `WaitGroup`, I expect `c.n == 1000`; I get 0 every run. `go vet ./...` prints `Inc passes lock by value: main.Counter contains sync.Mutex`. Go 1.23. I understand the mutex is copied, but I do not see why the count ends at exactly 0 rather than some random number below 1000, and whether `-race` should have flagged this (it does not).",
+    "tags": ["go"]
+  },
+  {
+    "id": "b2-03",
+    "title": "json.Unmarshal leaves every struct field at its zero value and returns no error",
+    "content": "I am decoding an API payload into a struct in Go 1.23. `json.Unmarshal` returns `nil`, but the struct comes back empty.\n\n```\ntype User struct {\n\tname string `json:\"name\"`\n\tage  int    `json:\"age\"`\n}\n\nfunc main() {\n\tvar u User\n\terr := json.Unmarshal([]byte(`{\"name\":\"ada\",\"age\":36}`), &u)\n\tfmt.Println(err, u)\n}\n```\n\nPrints `<nil> { 0}`. I expected `{ada 36}`. The JSON is valid (I ran it through `json.Valid`), the tags match the keys exactly, and I am passing a pointer. Swapping to `json.NewDecoder(...).Decode(&u)` behaves the same. Why is there no error at all if nothing was assigned?",
+    "tags": ["go"]
+  },
+  {
+    "id": "b2-04",
+    "title": "go mod: 'ambiguous import: found package in multiple modules' after tagging v2",
+    "content": "I maintain a library and tagged `v2.0.0` on it. Consumers that upgrade now fail at `go build` with `ambiguous import: found package example.com/lib/store in multiple modules: example.com/lib v1.8.3 and example.com/lib/v2 v2.0.0`. The consumer's `go.mod` requires both because a transitive dependency still pins the v1 line. Running `go mod tidy` does not remove either requirement, and `go mod why example.com/lib` points at that transitive dependency. I did add `/v2` to the module path in my own `go.mod` before tagging, and the tag is `v2.0.0` on a repo with no `v2/` subdirectory. Is having both major versions in one build graph supposed to be legal, and if so why is the import ambiguous rather than resolved by the module path?",
+    "tags": ["go"]
+  },
+  {
+    "id": "b2-05",
+    "title": "E0502: cannot borrow `map` as mutable while iterating over it in a for loop",
+    "content": "I want to drop every entry whose value is zero from a `HashMap` in Rust 1.83.\n\n```\nuse std::collections::HashMap;\n\nfn prune(map: &mut HashMap<String, i32>) {\n    for (k, v) in &*map {\n        if *v == 0 {\n            map.remove(k);\n        }\n    }\n}\n```\n\nrustc rejects it:\n\n```bash\nerror[E0502]: cannot borrow `*map` as mutable because it is also borrowed as immutable\n  --> src/lib.rs:7:13\n   |\n 5 |     for (k, v) in &*map {\n   |                   -----\n   |                   immutable borrow occurs here\n 7 |             map.remove(k);\n   |             ^^^^^^^^^^^^^ mutable borrow occurs here\n```\n\nI tried collecting the keys into a `Vec<&String>` first, which just moves the error to the collect. I understand why this is unsound in general, but what is the idiomatic single-pass way to express this without cloning every key?",
+    "tags": ["rust"]
+  },
+  {
+    "id": "b2-06",
+    "title": "future cannot be sent between threads safely because a MutexGuard is held across an await",
+    "content": "Rust 1.83, tokio 1.x with the multi-thread runtime. This async function does not compile once I `tokio::spawn` it.\n\n```\nuse std::sync::Mutex;\n\nasync fn tick(state: &Mutex<Vec<u32>>) {\n    let mut guard = state.lock().unwrap();\n    guard.push(1);\n    flush().await;\n    guard.push(2);\n}\n```\n\n```bash\nerror: future cannot be sent between threads safely\n   = help: within `impl Future`, the trait `Send` is not implemented\n           for `std::sync::MutexGuard<'_, Vec<u32>>`\nnote: future is not `Send` as this value is used across an await\n```\n\nDropping the guard in an inner scope before `flush().await` compiles, but then the two pushes are no longer atomic with respect to each other, which is the whole point. Is `tokio::sync::Mutex` the answer here, or is holding any lock across an await always wrong?",
+    "tags": ["rust"]
+  },
+  {
+    "id": "b2-07",
+    "title": "E0515: cannot return value referencing local variable when returning a &str from a String",
+    "content": "I want a helper that formats an id into a label without the caller having to own a `String`. Rust 1.83.\n\n```\nfn label(id: u32) -> &'static str {\n    let s = format!(\"item-{id}\");\n    &s\n}\n```\n\n```bash\nerror[E0515]: cannot return reference to local variable `s`\n --> src/lib.rs:3:5\n  |\n3 |     &s\n  |     ^^ returns a reference to data owned by the current function\n```\n\nDropping `'static` gives `error[E0106]: missing lifetime specifier` instead, and adding `fn label<'a>(id: u32) -> &'a str` fails the same way. I get that `s` dies at the end of the function, but is there any signature that lets the caller get a `&str` here, or do I have to return `String` and make every call site allocate?",
+    "tags": ["rust"]
+  },
+  {
+    "id": "b2-08",
+    "title": "cargo build --target aarch64-unknown-linux-gnu fails with 'linker `cc` not found'",
+    "content": "I am cross-compiling a pure-Rust binary from an x86_64 Ubuntu 24.04 box to aarch64, Rust 1.83. I ran `rustup target add aarch64-unknown-linux-gnu`, which succeeded, and `rustup show` lists the target as installed. `cargo build --target aarch64-unknown-linux-gnu` still fails at the link step with `error: linker \"cc\" not found` — and when I point `CC` at `aarch64-linux-gnu-gcc` the failure changes to a pile of `unrecognized emulation mode` errors from `ld`. The crate has no C dependencies and builds fine for the host target. What exactly does rustup's target component install (and what does it not), and where does the linker for the target get configured — `.cargo/config.toml` or an env var?",
+    "tags": ["rust", "linux"]
+  },
+  {
+    "id": "b2-09",
+    "title": "multiprocessing.Pool hangs on exit when a worker raises a custom exception",
+    "content": "Python 3.13 on Linux. My pool never returns when a worker fails, but only with my own exception type — a plain `ValueError` propagates fine.\n\n```python\nfrom multiprocessing import Pool\n\nclass WorkerError(Exception):\n    def __init__(self, code, detail):\n        super().__init__(f\"{code}: {detail}\")\n        self.code = code\n\ndef work(i):\n    if i == 3:\n        raise WorkerError(500, \"boom\")\n    return i * 2\n\nif __name__ == \"__main__\":\n    with Pool(4) as p:\n        print(p.map(work, range(8)))\n```\n\nI expected `WorkerError` to be re-raised in the parent. Instead the script prints nothing and hangs until I Ctrl-C, at which point the traceback ends in `self._cond.wait(timeout)` inside `pool.py`. Running `work(3)` directly in the parent raises normally. I assume this is a pickling problem with the two-argument constructor, but why does it hang instead of erroring?",
+    "tags": ["python"]
+  },
+  {
+    "id": "b2-10",
+    "title": "asyncio.run() raises 'cannot be called from a running event loop' inside my library helper",
+    "content": "I have a sync convenience wrapper around an async client so that scripts can call it without knowing about asyncio. Python 3.13.\n\n```python\nimport asyncio\n\nasync def _fetch(url):\n    ...\n\ndef fetch(url):\n    return asyncio.run(_fetch(url))\n\nasync def handler(url):\n    return fetch(url)\n```\n\nCalling `fetch()` from a plain script works. Calling `handler()` from inside an already running loop blows up with `RuntimeError: asyncio.run() cannot be called from a running event loop`. I tried `asyncio.get_event_loop().run_until_complete(...)` and got the same class of error plus a DeprecationWarning. Is there a supported way to run a coroutine to completion from sync code that is itself called from a coroutine, or do I have to expose both a sync and an async API?",
+    "tags": ["python"]
+  },
+  {
+    "id": "b2-11",
+    "title": "TypeError: can't subtract offset-naive and offset-aware datetimes after switching to zoneinfo",
+    "content": "I moved a scheduler from `pytz` to `zoneinfo` on Python 3.13 and the duration calculation broke.\n\n```python\nfrom datetime import datetime\nfrom zoneinfo import ZoneInfo\n\nstart = datetime.now(ZoneInfo(\"Europe/Warsaw\"))\ndeadline = datetime.strptime(\"2026-03-29 03:30\", \"%Y-%m-%d %H:%M\")\nprint(deadline - start)\n```\n\n```bash\nTypeError: can't subtract offset-naive and offset-aware datetimes\n```\n\nAttaching the zone with `deadline.replace(tzinfo=ZoneInfo(\"Europe/Warsaw\"))` makes the error go away, but 2026-03-29 02:30 local is the DST spring-forward gap in that zone and the resulting UTC offset looks wrong to me. What is the correct way to attach a zone to a parsed wall-clock time, and what does `zoneinfo` do for a time that does not exist?",
+    "tags": ["python"]
+  },
+  {
+    "id": "b2-12",
+    "title": "pip install fails with ResolutionImpossible between two packages pinning different urllib3",
+    "content": "On Python 3.13 in a fresh venv, `pip install -r requirements.txt` ends with `ERROR: ResolutionImpossible` and a conflict report saying one package requires `urllib3<2`, another requires `urllib3>=2.0`, and my own file pins `urllib3==2.2.3`. Neither dependency has a release that agrees with the other on PyPI as far as I can tell from their metadata. Backtracking runs for several minutes downloading dozens of old sdists before giving up. I do not want to use `--no-deps` because that just moves the failure to import time. Is there a way to get pip to tell me the minimal set of conflicting requirements rather than the full backtracking log, and is pinning a transitive dependency in the requirements file the right lever here at all?",
+    "tags": ["python"]
+  },
+  {
+    "id": "b2-13",
+    "title": "UnicodeDecodeError: 'utf-8' codec can't decode byte 0x92 reading a CSV exported from Excel",
+    "content": "Python 3.13 on macOS, reading a file a colleague exported from Excel on Windows.\n\n```python\nimport csv\n\nwith open(\"export.csv\", newline=\"\") as f:\n    for row in csv.reader(f):\n        print(row)\n```\n\n```bash\nUnicodeDecodeError: 'utf-8' codec can't decode byte 0x92 in position 4117:\ninvalid start byte\n```\n\n`file export.csv` reports `ISO-8859 text, with CRLF line terminators`. Opening with `encoding=\"latin-1\"` reads without an exception but turns the offending characters into a control character rather than the apostrophe I see in Excel. `encoding=\"utf-8\", errors=\"replace\"` gives me question marks. Which encoding actually produces 0x92 for a curly apostrophe, and is there a way to detect this rather than guessing per file?",
+    "tags": ["python"]
+  },
+  {
+    "id": "b2-14",
+    "title": "forEach with an async callback returns before the inserts finish in Node 22",
+    "content": "Node 22, plain ESM. My import routine logs \"done\" immediately and the HTTP response goes out before a single row exists.\n\n```javascript\nasync function saveAll(rows) {\n  rows.forEach(async (row) => {\n    await db.insert(row);\n  });\n  console.log(\"done\");\n}\n```\n\nI expected `saveAll` to resolve only after every insert resolved. Instead \"done\" prints first, and if the process exits right after, some rows are never written. Wrapping the body in a try/catch does not catch insert failures either — they surface as unhandled rejections. Replacing `forEach` with a `for...of` loop fixes it, but I do not understand what `forEach` does with the promise the callback returns, and whether `Promise.all(rows.map(...))` is equivalent to the `for...of` version.",
+    "tags": ["nodejs"]
+  },
+  {
+    "id": "b2-15",
+    "title": "ERR_REQUIRE_ESM when requiring node-fetch v3 from a CommonJS file on Node 22",
+    "content": "Node 22.11, project has no `\"type\"` field in package.json, so my files are CommonJS.\n\n```javascript\n// scripts/sync.cjs\nconst fetch = require(\"node-fetch\"); // node-fetch 3.3.2\n```\n\n```bash\nError [ERR_REQUIRE_ESM]: require() of ES Module\n/app/node_modules/node-fetch/src/index.js from /app/scripts/sync.cjs not supported.\nInstead change the require of index.js to a dynamic import() which is available\nin all CommonJS modules.\n```\n\nI tried `const { default: fetch } = await import(\"node-fetch\")` but top-level await is not allowed in CJS. Downgrading to node-fetch 2 works. Node 22 has a global `fetch` — is that a full replacement for the cases node-fetch covers (proxy agent, streaming bodies), and if I do need the package, what is the least invasive way to consume an ESM-only dependency from a CJS entry point?",
+    "tags": ["nodejs"]
+  },
+  {
+    "id": "b2-16",
+    "title": "MaxListenersExceededWarning: 11 shutdown listeners added after a few thousand requests",
+    "content": "Node 22 HTTP server. After the service has been up for a while, RSS climbs steadily and the log fills with the same warning.\n\n```javascript\nconst bus = new EventEmitter();\n\nconst server = http.createServer((req, res) => {\n  bus.on(\"shutdown\", () => res.end());\n  res.end(\"ok\");\n});\n```\n\n```bash\n(node:41) MaxListenersExceededWarning: Possible EventEmitter memory leak detected.\n11 shutdown listeners added to [EventEmitter]. Use emitter.setMaxListeners()\nto increase limit\n```\n\nA heap snapshot after 50k requests shows tens of thousands of closures retained through the emitter, each holding a `ServerResponse`. I know I could call `bus.setMaxListeners(0)` to silence the warning, but that is clearly the wrong direction. What is the right place to remove the listener given the response may end normally, error, or be aborted by the client?",
+    "tags": ["nodejs"]
+  },
+  {
+    "id": "b2-17",
+    "title": "Writing NDJSON line by line grows RSS to 2 GB because I ignore the return value of write()",
+    "content": "Node 22, exporting a few million rows to a file. The process gets OOM-killed on a 2 GB container even though nothing is accumulated in an array.\n\n```javascript\nconst out = fs.createWriteStream(\"big.ndjson\");\n\nfor (let i = 0; i < 5_000_000; i++) {\n  out.write(JSON.stringify({ i }) + \"\\n\");\n}\nout.end();\n```\n\nI expected the stream to write to disk as it goes and keep memory flat. `--inspect` shows the growth is in the stream's internal buffer list, and `out.writableLength` climbs into the hundreds of megabytes. The loop never yields to the event loop, so I suspect the `drain` event never gets a chance to fire. What is the correct pattern here — awaiting `drain` manually, or feeding this through `stream.pipeline` with a generator?",
+    "tags": ["nodejs"]
+  },
+  {
+    "id": "b2-18",
+    "title": "ConcurrentModificationException when removing from an ArrayList inside an enhanced for loop",
+    "content": "Java 21. This throws on the second iteration.\n\n```\nList<String> names = new ArrayList<>(List.of(\"a\", \"b\", \"c\"));\nfor (String n : names) {\n    if (n.equals(\"a\")) {\n        names.remove(n);\n    }\n}\n```\n\n```bash\nException in thread \"main\" java.util.ConcurrentModificationException\n\tat java.base/java.util.ArrayList$Itr.checkForComodification(ArrayList.java:1013)\n\tat java.base/java.util.ArrayList$Itr.next(ArrayList.java:967)\n```\n\nThe odd part: if I change the condition to `n.equals(\"b\")` — the second-to-last element — the loop finishes silently and \"c\" is never visited. There is only one thread here, so the name of the exception is confusing me. What is `modCount` actually comparing, and why does removing the second-to-last element skip the check entirely?",
+    "tags": ["java"]
+  },
+  {
+    "id": "b2-19",
+    "title": "NoSuchMethodError for Preconditions.checkArgument at runtime only, compiles fine",
+    "content": "Java 21, Maven build. The project compiles cleanly and unit tests pass, but on the server it dies with `java.lang.NoSuchMethodError: 'void com.google.common.base.Preconditions.checkArgument(boolean, java.lang.String, java.lang.Object)'`. `mvn dependency:tree` shows Guava pulled in twice at different versions through two different libraries, and Maven's nearest-wins resolution picks the older one, while I compile against the newer API that a direct dependency exposes transitively. Adding an explicit direct dependency on the newer Guava fixes it locally, but I want to understand whether that is a real fix or a coincidence of ordering, and whether `dependencyManagement`, a `<exclusions>` block, or the shade plugin's relocation is the right tool when two libraries genuinely need different versions.",
+    "tags": ["java", "maven"]
+  },
+  {
+    "id": "b2-20",
+    "title": "Virtual threads pin the carrier thread and throughput collapses under synchronized",
+    "content": "Java 21. I swapped a fixed pool for virtual threads expecting better throughput on a blocking workload, and got roughly the same numbers as a pool of 8.\n\n```\nvar lock = new Object();\ntry (var exec = Executors.newVirtualThreadPerTaskExecutor()) {\n    for (int i = 0; i < 10_000; i++) {\n        exec.submit(() -> {\n            synchronized (lock) {\n                Thread.sleep(50);\n            }\n            return null;\n        });\n    }\n}\n```\n\nRunning with `-Djdk.tracePinnedThreads=full` prints thousands of stack traces with `monitors:` entries pointing at that `synchronized` block. I expected the virtual thread to unmount while sleeping. Replacing `synchronized` with a `ReentrantLock` restores the expected scaling. Is pinning inside a monitor specific to 21, and is there a way to keep the monitor semantics without pinning?",
+    "tags": ["java"]
+  },
+  {
+    "id": "b2-21",
+    "title": "incompatible types: List<Dog> cannot be converted to List<Animal> when passing to a helper",
+    "content": "Java 21. `Dog extends Animal`, so I assumed a list of dogs is a list of animals.\n\n```\nstatic void printAll(List<Animal> animals) {\n    for (Animal a : animals) System.out.println(a.name());\n}\n\nList<Dog> dogs = new ArrayList<>();\nprintAll(dogs);\n```\n\n```bash\nerror: incompatible types: List<Dog> cannot be converted to List<Animal>\n```\n\nMeanwhile `Dog[] dogs` passed to `void printAll(Animal[] a)` compiles without complaint. I changed the signature to `List<? extends Animal>` and it works, but then I cannot call `animals.add(new Dog())` inside the method any more. What makes arrays covariant and generics invariant here, and what does the wildcard actually give up?",
+    "tags": ["java"]
+  },
+  {
+    "id": "b2-22",
+    "title": "Calling .Result on an async method deadlocks in ASP.NET MVC 4.8 but works in a console app",
+    "content": ".NET Framework 4.8, ASP.NET MVC controller. This action never returns; the request eventually times out with no exception logged.\n\n```\npublic ActionResult Index()\n{\n    var json = GetJsonAsync().Result;\n    return Content(json);\n}\n\nprivate async Task<string> GetJsonAsync()\n{\n    using var client = new HttpClient();\n    return await client.GetStringAsync(\"https://example.com/api\");\n}\n```\n\nThe exact same two methods in a console app return in milliseconds. Adding `.ConfigureAwait(false)` to the `GetStringAsync` call makes the controller work. Making the action `async Task<ActionResult>` and awaiting also works. I would like to understand which thread is waiting on what — is `.Result` blocking the one thread the continuation needs, and does that mean any library I call must use `ConfigureAwait(false)` everywhere?",
+    "tags": ["csharp"]
+  },
+  {
+    "id": "b2-23",
+    "title": "SocketException: Only one usage of each socket address after wrapping HttpClient in using",
+    "content": ".NET 9 worker service polling an internal API in a loop. It runs fine for a couple of minutes then fails.\n\n```\nfor (int i = 0; i < 5000; i++)\n{\n    using var client = new HttpClient();\n    var body = await client.GetStringAsync(url);\n    Process(body);\n}\n```\n\n```bash\nSystem.Net.Sockets.SocketException (10048): Only one usage of each socket address\n(protocol/network address/port) is normally permitted.\n```\n\n`netstat -an | find \"TIME_WAIT\"` shows tens of thousands of entries against that host. `HttpClient` implements `IDisposable`, so disposing it per use looked correct to me. Is a single static `HttpClient` safe for concurrent use, and if it is, how does that interact with DNS changes — which is the reason I see cited for not keeping one forever?",
+    "tags": ["csharp"]
+  },
+  {
+    "id": "b2-24",
+    "title": "Calling a mutating method on a struct property compiles but the field stays 0",
+    "content": ".NET 9, C# 13. This compiles with no warning and does nothing at runtime.\n\n```\nstruct Counter\n{\n    public int N;\n    public void Inc() => N++;\n}\n\nclass Holder\n{\n    public Counter Value { get; set; } = new Counter();\n}\n\nvar h = new Holder();\nh.Value.Inc();\nConsole.WriteLine(h.Value.N); // 0\n```\n\nI expected 1. If I change `Value` from an auto-property to a public field, the same call site does increment. Writing `list[0].X = 5` for a `List<Counter>` is a compile error (CS1612), so the compiler clearly knows about this class of mistake in some places. Why is the property version silently accepted, and is there an analyzer or a language construct that makes this fail at compile time?",
+    "tags": ["csharp"]
+  },
+  {
+    "id": "b2-25",
+    "title": "System.Text.Json writes only the base class properties when the variable is typed as the base",
+    "content": ".NET 9. Serializing a derived instance through a base-typed variable drops the derived properties.\n\n```\npublic class Animal { public string Name { get; set; } }\npublic class Dog : Animal { public string Breed { get; set; } }\n\nAnimal a = new Dog { Name = \"Rex\", Breed = \"Lab\" };\nConsole.WriteLine(JsonSerializer.Serialize(a));\n```\n\nOutput is `{\"Name\":\"Rex\"}`; I expected `Breed` to be included. `JsonSerializer.Serialize<object>(a)` does emit both, and Newtonsoft.Json emitted both without any configuration, which is how I got here after a migration. I have seen `[JsonDerivedType]` mentioned — does that change the shape of the output by adding a discriminator, and is there a way to get polymorphic output without one for a type I do not control?",
+    "tags": ["csharp"]
+  },
+  {
+    "id": "b2-26",
+    "title": "std::string_view returned from a function prints garbage at -O2 but is fine at -O0",
+    "content": "C++20, GCC 14. This helper looked like a cheap way to avoid an allocation.\n\n```\nstd::string_view upper(std::string s) {\n    for (auto& c : s) c = std::toupper(static_cast<unsigned char>(c));\n    return s;\n}\n\nint main() {\n    std::cout << upper(\"hello\") << \"\\n\";\n}\n```\n\nAt `-O0` it prints HELLO. At `-O2` it prints a few bytes of garbage or nothing. Compiling with `-fsanitize=address` reports `heap-use-after-free` with the read inside `operator<<` and the free inside `upper`. I understand the `std::string` parameter is destroyed on return, but I expected either a compiler error or at least a warning — `-Wall -Wextra` says nothing. Is there a warning flag that catches a `string_view` outliving its owner, and what is the right signature for a function like this?",
+    "tags": ["cplusplus"]
+  },
+  {
+    "id": "b2-27",
+    "title": "Global registry map is empty at startup depending on the link order of translation units",
+    "content": "C++20, GCC 14, several static libraries. I use the classic self-registration trick so each widget registers itself at load.\n\n```\n// registry.cpp\nstd::map<std::string, Creator> g_registry;\n\n// widget.cpp\nstatic const bool registered = [] {\n    g_registry[\"widget\"] = &makeWidget;\n    return true;\n}();\n```\n\nDepending on the order the objects appear on the link line, `g_registry` is either populated correctly or completely empty at the point `main()` runs — and in one build the process crashes inside `std::map::operator[]` before `main()`. Nothing here is multithreaded. I assume the lambda runs before `g_registry`'s own constructor in the bad case. Is initialization order across translation units genuinely unspecified, and does a function-local static fix this in all cases or only within a single binary?",
+    "tags": ["cplusplus"]
+  },
+  {
+    "id": "b2-28",
+    "title": "Iterator invalidation: loop reads freed memory once the vector reallocates on push_back",
+    "content": "C++20, Clang 18 with `-fsanitize=address`. I append to a vector while walking it.\n\n```\nstd::vector<int> v{1, 2, 3};\nfor (auto it = v.begin(); it != v.end(); ++it) {\n    if (*it == 2) v.push_back(*it * 10);\n}\n```\n\n```bash\n==1==ERROR: AddressSanitizer: heap-use-after-free on address 0x602000000014\nREAD of size 4 at 0x602000000014 thread T0\n    #0 in main vec.cpp:5\n```\n\nWithout the sanitizer it usually appears to work, which is worse. If I call `v.reserve(64)` up front the sanitizer stays quiet — but that feels like hiding the bug rather than fixing it, since it only holds while capacity lasts. Which of `begin()`, `end()` and the element references are invalidated by `push_back`, and is index-based iteration with `v.size()` re-read each time actually safe here?",
+    "tags": ["cplusplus"]
+  },
+  {
+    "id": "b2-29",
+    "title": "std::move on a const member still calls the copy constructor and my move count stays at 0",
+    "content": "C++20, GCC 14. I instrumented my string-like type to count moves and copies, and the move constructor of the enclosing class never moves.\n\n```\nclass Wrapper {\n    const Tracked name_;\npublic:\n    explicit Wrapper(Tracked n) : name_(std::move(n)) {}\n    Wrapper(Wrapper&& other) noexcept : name_(std::move(other.name_)) {}\n};\n```\n\n`Tracked` prints on every copy and every move. Constructing a `Wrapper` and then moving it prints one move (from the constructor argument) and then a copy, where I expected a second move. Removing `const` from `name_` gives me the two moves I expected. My reading is that `std::move` on a const lvalue yields `const Tracked&&`, which cannot bind to `Tracked&&` and falls back to the copy constructor — is that right, and is there any way to keep the member const and still move it?",
+    "tags": ["cplusplus"]
+  },
+  {
+    "id": "b2-30",
+    "title": "Reading a float through an unsigned int* gives the wrong bits at -O2 but is right at -O0",
+    "content": "C11, GCC 14 on x86-64. This helper returns a stale value once optimizations are on.\n\n```\nstatic unsigned int punned(float *f, unsigned int *u) {\n    *f = 2.0f;\n    *u = 7u;\n    return *(unsigned int *)f;\n}\n\nint main(void) {\n    float x;\n    printf(\"%08x\\n\", punned(&x, (unsigned int *)&x));\n    return 0;\n}\n```\n\nAt `-O0` I get `00000007`. At `-O2` I get `40000000`, the bit pattern of 2.0f — the compiler appears to keep the earlier store cached and assume `*u` cannot touch the same storage. `-fno-strict-aliasing` restores the `-O0` result. So the compiler is right and my code is undefined, but what is the sanctioned way to reinterpret a float's bits in C11 — `memcpy`, or a `union`, and is the union route actually legal or just widely tolerated?",
+    "tags": ["c"]
+  },
+  {
+    "id": "b2-31",
+    "title": "AddressSanitizer heap-use-after-free after realloc grows my array",
+    "content": "C11, Clang 18, built with `-fsanitize=address`. I keep a second pointer into the buffer for convenience and it goes stale.\n\n```\nint *a = malloc(4 * sizeof *a);\nint *cursor = a;\n\na = realloc(a, 1024 * sizeof *a);\ncursor[0] = 1;\n```\n\n```bash\n==7==ERROR: AddressSanitizer: heap-use-after-free on address 0x602000000010\nWRITE of size 4 at 0x602000000010 thread T0\n0x602000000010 is located 0 bytes inside of 16-byte region\nfreed by thread T0 here:\n    #1 in realloc\n```\n\nWithout the sanitizer the write usually lands somewhere harmless and the bug shows up much later as corrupted data. I also noticed that assigning the result straight back to `a` leaks the original block if `realloc` returns NULL. What is the correct idiom — store offsets instead of pointers, and use a temporary for the `realloc` result?",
+    "tags": ["c"]
+  },
+  {
+    "id": "b2-32",
+    "title": "fread into a struct reads shifted values because sizeof is 12 while records are 7 bytes",
+    "content": "C11, GCC 14, reading a binary file produced by another tool. The first record is right and everything after it is nonsense.\n\n```\nstruct rec {\n    char     id;\n    int      value;\n    short    flag;\n};\n\nstruct rec r;\nwhile (fread(&r, sizeof r, 1, fp) == 1) {\n    printf(\"%d %d %d\\n\", r.id, r.value, r.flag);\n}\n```\n\n`printf(\"%zu\\n\", sizeof(struct rec))` prints 12, but the file format documents 7 bytes per record (1 + 4 + 2). So every read after the first is misaligned with the file. I know `__attribute__((packed))` exists, but I have also read that taking the address of a member of a packed struct is a problem on some targets. Is reading each field with its own `fread` the portable answer, and does that also handle a producer that wrote little-endian on a big-endian reader?",
+    "tags": ["c"]
+  },
+  {
+    "id": "b2-33",
+    "title": "Composer: class not found after moving it to a new namespace, dump-autoload does not help",
+    "content": "PHP 8.3, Composer 2.8. I moved `App\\Service\\Mailer` to `App\\Mail\\Mailer` and moved the file from `src/Service/Mailer.php` to `src/Mail/Mailer.php`. Every request now dies with `Error: Class \"App\\Mail\\Mailer\" not found`. My autoload block maps `\"App\\\\\": \"src/\"` under `psr-4`. I ran `composer dump-autoload -o`, deleted `vendor/composer/autoload_*`, and cleared the framework cache; the generated `autoload_classmap.php` still lists the old FQCN pointing at the old path, which no longer exists. The class name inside the file, the namespace declaration and the directory all match as far as I can see, and the deploy target is Linux while I develop on macOS. What does the optimized classmap key off, and could the case-insensitive filesystem be why this only breaks in production?",
+    "tags": ["php"]
+  },
+  {
+    "id": "b2-34",
+    "title": "json_encode() returns false with JSON_ERROR_UTF8 for rows read from a latin1 MySQL table",
+    "content": "PHP 8.3 with PDO against MySQL 8. Some rows serialize fine, some make the whole response empty.\n\n```\n$rows = $pdo->query('SELECT id, name FROM users')->fetchAll(PDO::FETCH_ASSOC);\n$json = json_encode($rows);\n\nvar_dump($json);                 // bool(false)\necho json_last_error_msg();      // Malformed UTF-8 characters, possibly incorrectly encoded\n```\n\nThe table columns are `latin1_swedish_ci` and the connection charset is `utf8mb4`, so I suspect the driver is handing me bytes that are not valid UTF-8. `JSON_INVALID_UTF8_SUBSTITUTE` makes `json_encode` succeed but replaces the accented characters with U+FFFD, which is not acceptable for names. Is `mb_convert_encoding($v, 'UTF-8', 'ISO-8859-1')` on every string field the right repair, or should this be fixed at the connection/collation level so PHP never sees latin1 bytes?",
+    "tags": ["php", "mysql"]
+  },
+  {
+    "id": "b2-35",
+    "title": "PDO throws a syntax error near '10' when binding LIMIT with a bound parameter",
+    "content": "PHP 8.3, MySQL 8, PDO with default settings.\n\n```\n$limit = $_GET['limit'];               // \"10\"\n$stmt = $pdo->prepare('SELECT id FROM posts ORDER BY id DESC LIMIT :limit');\n$stmt->bindValue(':limit', $limit, PDO::PARAM_INT);\n$stmt->execute();\n```\n\n```bash\nSQLSTATE[42000]: Syntax error or access violation: 1064 You have an error in your\nSQL syntax; check the manual ... near ''10'' at line 1\n```\n\nThe quotes around 10 in the message tell me the value is going in as a string despite `PDO::PARAM_INT`. Interpolating `(int) $limit` straight into the SQL works but I would rather not build SQL by hand. I have seen `PDO::ATTR_EMULATE_PREPARES => false` suggested — does that change how PARAM_INT is sent, and are there downsides for the rest of my queries if I turn emulation off globally?",
+    "tags": ["php"]
+  },
+  {
+    "id": "b2-36",
+    "title": "Hash.new([]) makes every key share one array and nothing is ever stored in the hash",
+    "content": "Ruby 3.4. I am grouping records by key and the result is empty even though the array clearly grows.\n\n```\ncounts = Hash.new([])\ncounts[:a] << 1\ncounts[:b] << 2\n\np counts        # {}\np counts[:a]    # [1, 2]\np counts[:zzz]  # [1, 2]\n```\n\nI expected `{a: [1], b: [2]}`. Instead the hash has no keys at all, and every lookup — including keys I never touched — returns the same array holding both values. `Hash.new { |h, k| h[k] = [] }` gives me what I wanted. I would like to understand exactly what the non-block form of `Hash.new` stores and why `<<` on the default never creates a key, since `counts[:a] += [1]` does create one.",
+    "tags": ["ruby"]
+  },
+  {
+    "id": "b2-37",
+    "title": "Bundler: 'Your bundle is locked to nokogiri 1.16.0 but that version could not be found'",
+    "content": "Ruby 3.4, Bundler 2.5, deploying to a Linux container while developing on an Apple Silicon Mac. `bundle install --deployment` in CI fails with `Your bundle is locked to nokogiri (1.16.0) from rubygems repository https://rubygems.org/, but that version could not be found in that source`. The version does exist on rubygems.org. `Gemfile.lock` has a PLATFORMS section listing only `arm64-darwin-23`, and nokogiri ships precompiled native gems per platform. Running `bundle lock --add-platform x86_64-linux` and committing the lock makes CI pass, but I want to know whether that is the intended workflow or a workaround, and what `bundle install` does differently in deployment mode that makes it refuse to resolve instead of just fetching the gem it needs.",
+    "tags": ["ruby"]
+  },
+  {
+    "id": "b2-38",
+    "title": "Timeout.timeout does not interrupt a catastrophic regexp backtrack in Ruby 3.4",
+    "content": "Ruby 3.4. I wrapped user-supplied input matching in `Timeout.timeout` expecting a hard ceiling on the work.\n\n```\nrequire 'timeout'\n\nre = /\\A(a+)+\\z/\ns  = 'a' * 30 + 'b'\n\nTimeout.timeout(1) { re.match?(s) }\n```\n\nI expected `Timeout::Error` after one second. Instead the process pins a core for minutes and the block never returns; Ctrl-C does not interrupt it either. If I replace the regexp with `sleep 30`, the timeout fires as documented. So `Timeout` clearly works for some blocking operations and not this one. Is the timeout thread's `raise` only delivered at interrupt check points that the regexp engine never reaches, and is `Regexp.timeout=` the only real defence here?",
+    "tags": ["ruby"]
+  },
+  {
+    "id": "b2-39",
+    "title": "View model never deinits: retain cycle from a closure capturing self in a Combine sink",
+    "content": "Swift 5.10, iOS 17. `deinit` never prints and Instruments shows one `FeedViewModel` per navigation push, all alive.\n\n```\nfinal class FeedViewModel {\n    private var cancellables = Set<AnyCancellable>()\n    private let service: FeedService\n    var items: [Item] = []\n\n    func load() {\n        service.publisher()\n            .sink { newItems in\n                self.items = newItems\n            }\n            .store(in: &cancellables)\n    }\n\n    deinit { print(\"deinit\") }\n}\n```\n\nThe memory graph debugger shows the cycle as view model to `cancellables` to `AnyCancellable` to the closure and back to the view model. `[weak self]` on the sink fixes it. What I do not understand is why `store(in: &cancellables)` is enough to close the loop — is the subscription retained by the set, and would the same cycle exist if the publisher completed?",
+    "tags": ["swift"]
+  },
+  {
+    "id": "b2-40",
+    "title": "Swift 6 strict concurrency: capture of non-Sendable self in a @Sendable closure",
+    "content": "Swift 6, migrating a module from Swift 5 language mode. Turning on the Swift 6 language mode produces errors on code that compiled and ran fine.\n\n```\nfinal class Cache {\n    var storage: [String: Data] = [:]\n}\n\nfunc warm(_ cache: Cache) {\n    Task.detached {\n        cache.storage[\"key\"] = Data()\n    }\n}\n```\n\n```bash\nerror: capture of 'cache' with non-Sendable type 'Cache' in a '@Sendable' closure\n```\n\nMarking the class `@unchecked Sendable` silences it but obviously does not make the dictionary access safe. Making `Cache` an actor changes every call site to `await`, which ripples through a lot of synchronous code. Is there a middle option — `@MainActor` on the class, or a `Mutex`-backed storage — that satisfies the checker without either lying to it or actor-ifying the whole API?",
+    "tags": ["swift"]
+  },
+  {
+    "id": "b2-41",
+    "title": "JSONDecoder .iso8601 throws dataCorrupted on timestamps with fractional seconds",
+    "content": "Swift 5.10 on iOS 17, decoding a payload from our own backend.\n\n```\nstruct Post: Decodable {\n    let id: Int\n    let createdAt: Date\n}\n\nlet decoder = JSONDecoder()\ndecoder.keyDecodingStrategy = .convertFromSnakeCase\ndecoder.dateDecodingStrategy = .iso8601\n// payload: {\"id\": 1, \"created_at\": \"2026-03-11T09:41:12.482Z\"}\n```\n\n```bash\nSwift.DecodingError.dataCorrupted(Swift.DecodingError.Context(\n  codingPath: [CodingKeys(stringValue: \"createdAt\")],\n  debugDescription: \"Expected date string to be ISO8601-formatted.\"))\n```\n\nDropping `.482` from the string decodes fine, so the fractional seconds are the trigger. The backend cannot easily stop emitting milliseconds. Does `.iso8601` map to a formatter with a fixed option set that excludes fractional seconds, and is a `.custom` strategy with two formatters (with and without) the usual fix, or is there a built-in that handles both?",
+    "tags": ["swift"]
+  },
+  {
+    "id": "b2-42",
+    "title": "catch (e: Exception) swallows CancellationException and the coroutine keeps running",
+    "content": "Kotlin 2.1, kotlinx.coroutines 1.9. `cancelAndJoin()` returns but the polling loop keeps hitting the network.\n\n```\nval job = scope.launch {\n    while (true) {\n        try {\n            delay(100)\n            poll()\n        } catch (e: Exception) {\n            log.warn(\"poll failed\", e)\n        }\n    }\n}\n\njob.cancelAndJoin()\n```\n\nThe log fills with `kotlinx.coroutines.JobCancellationException: StandaloneCoroutine was cancelled` on every iteration, and the loop never exits — `cancelAndJoin` hangs. I expected cancellation to break out of the loop. Replacing `while (true)` with `while (isActive)` makes it terminate. Is catching `Exception` around a suspending call always wrong in a coroutine, and what is the recommended shape — rethrow `CancellationException` explicitly, or catch only the exception types `poll()` can throw?",
+    "tags": ["kotlin"]
+  },
+  {
+    "id": "b2-43",
+    "title": "NullPointerException from a Java getter even though the Kotlin type says non-null",
+    "content": "Kotlin 2.1 calling into a Java 21 library we do not own.\n\n```\n// Java\npublic class Config {\n    public String getRegion() { return props.get(\"region\"); } // can return null\n}\n```\n\n```\n// Kotlin\nval region: String = config.region\nprintln(region.uppercase())\n```\n\n```bash\njava.lang.NullPointerException: config.getRegion() must not be null\n\tat com.example.Boot.start(Boot.kt:14)\n```\n\nThe crash is on line 14 (the assignment), not at `uppercase()`, and the Kotlin compiler gave me no warning — IDE inspection shows the type as `String!`. If I declare `val region: String? = config.region` the null flows through fine. Where exactly is that null check being inserted, and is there a compiler flag or annotation on the Java side that would have made this a compile-time error instead?",
+    "tags": ["kotlin"]
+  },
+  {
+    "id": "b2-44",
+    "title": "Gradle: 'Inconsistent JVM-target compatibility' between compileJava 21 and compileKotlin 17",
+    "content": "Kotlin 2.1 with the Gradle Kotlin plugin, Gradle 8.10, on a mixed Java/Kotlin module. The build fails with `Inconsistent JVM-target compatibility detected for tasks 'compileJava' (21) and 'compileKotlin' (17)`. My build script sets `java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }` but also has an older `kotlinOptions.jvmTarget = \"17\"` line that predates the toolchain block. I have seen three different suggested fixes — setting `compilerOptions.jvmTarget`, setting `kotlin { jvmToolchain(21) }`, and setting `sourceCompatibility`/`targetCompatibility` — and I do not know which of these are equivalent, which one wins if two are present, or whether the toolchain also decides which JDK actually runs the compiler daemon.",
+    "tags": ["kotlin", "gradle"]
+  },
+  {
+    "id": "b2-45",
+    "title": "LateInitializationError: Field '_client' has not been initialized on the first request",
+    "content": "Dart 3.6. I initialize a client in the constructor via an async method and the first caller sometimes crashes.\n\n```\nclass Api {\n  late final HttpClient _client;\n\n  Api() {\n    _init();\n  }\n\n  Future<void> _init() async {\n    await _loadCerts();\n    _client = HttpClient();\n  }\n\n  Future<String> get(String path) async => _read(_client, path);\n}\n```\n\n```bash\nLateInitializationError: Field '_client' has not been initialized.\n#0      Api._client (package:app/api.dart)\n#1      Api.get (package:app/api.dart:14:44)\n```\n\nIt only reproduces when `get()` is called immediately after construction; a short delay in between hides it. I understand the constructor returns before `_init` completes. Is there a supported pattern for an object that needs async setup — a static async factory returning `Future<Api>`, or storing the `Future` itself and awaiting it in every method?",
+    "tags": ["dart"]
+  },
+  {
+    "id": "b2-46",
+    "title": "type 'List<dynamic>' is not a subtype of type 'List<String>' after jsonDecode",
+    "content": "Dart 3.6. Decoding a JSON body and assigning a nested array fails at runtime, not at compile time.\n\n```\nfinal data = jsonDecode(body) as Map<String, dynamic>;\nfinal List<String> tags = data['tags'];\n```\n\n```bash\ntype 'List<dynamic>' is not a subtype of type 'List<String>' in type cast\n```\n\nThe payload really is `{\"tags\": [\"a\", \"b\"]}`, so every element is a string — but the static type of the list `jsonDecode` produces is `List<dynamic>`. `data['tags'] as List<String>` fails the same way, while `(data['tags'] as List).cast<String>()` works and so does `List<String>.from(data['tags'])`. Do `cast` and `from` differ in when they check the elements (lazily on access versus eagerly on construction), and which one should I prefer for data coming off the network?",
+    "tags": ["dart"]
+  },
+  {
+    "id": "b2-47",
+    "title": "Illegal argument in isolate message when passing a closure to Isolate.spawn",
+    "content": "Dart 3.6 on the VM. I tried to move a CPU-bound parse into an isolate using an inline closure.\n\n```\nimport 'dart:isolate';\n\nFuture<void> main() async {\n  final log = StringBuffer();\n  await Isolate.spawn((int n) {\n    log.write(n);\n  }, 42);\n}\n```\n\n```bash\nUnhandled exception:\nInvalid argument(s): Illegal argument in isolate message:\n(object is a closure - Function 'main.<anonymous closure>')\n```\n\nMoving the body to a top-level function and passing a `SendPort` in the message works, so I have a way forward. What I want to understand is the rule: is any closure rejected, or only one that captures state from the enclosing scope? A closure that captures nothing still fails for me, and `Isolate.run` accepts a closure just fine — what is different about it?",
+    "tags": ["dart"]
+  },
+  {
+    "id": "b2-48",
+    "title": "setState() called after dispose() when an await finishes after the user leaves the screen",
+    "content": "Flutter 3.27. Navigating away from a screen while a fetch is in flight throws in debug and logs a red screen in the console.\n\n```\nFuture<void> _load() async {\n  final data = await api.fetch();\n  setState(() => _items = data);\n}\n```\n\n```bash\nFlutter Error: setState() called after dispose(): _FeedPageState#3a2f1\n(lifecycle state: defunct, not mounted)\nThis error happens if you call setState() on a State object for a widget that\nno longer appears in the widget tree.\n```\n\nGuarding with `if (!mounted) return;` before `setState` removes the error, and the analyzer even suggests it. But I still see the network request complete and its result thrown away, and in a couple of places I need the result (to write it to a cache). Is `mounted` the whole answer, or should the request be cancelled on `dispose` — and is there a standard way to cancel a `Future` that a plain `async` function returns?",
+    "tags": ["flutter", "dart"]
+  },
+  {
+    "id": "b2-49",
+    "title": "Reordering a ListView with stateful children keeps the state on the wrong row",
+    "content": "Flutter 3.27. Each row is a `StatefulWidget` holding a small local count. When I remove the first item, the counts stay in place instead of moving with their rows.\n\n```\nListView(\n  children: _items\n      .map((item) => CounterTile(label: item.label))\n      .toList(),\n)\n```\n\nWith items A(count 3), B(0), C(0), removing A leaves B showing 3. I expected B to keep its own 0. Adding `key: ValueKey(item.id)` to `CounterTile` fixes it. I would like to understand what the framework matches on during reconciliation when no key is present, why the label updates correctly but the `State` does not follow, and whether `ObjectKey` or `UniqueKey` would be wrong choices here.",
+    "tags": ["flutter"]
+  },
+  {
+    "id": "b2-50",
+    "title": "MissingPluginException for shared_preferences after a hot restart on Android",
+    "content": "Flutter 3.27, Android. After adding `shared_preferences` and doing a hot restart, every call throws `MissingPluginException(No implementation found for method getAll on channel plugins.flutter.io/shared_preferences)`. A full stop and `flutter run` makes it work; the next hot restart brings it back. I have already run `flutter clean`, `flutter pub get`, and deleted `.dart_tool`. It reproduces on a physical device and an emulator, but not on iOS. My understanding is that plugin registration happens once when the engine attaches, and hot restart resets Dart state without re-running native registration — but I also call one preference read from a background isolate for a scheduled task, which I suspect never had a registrant at all. Which of these two is the actual cause, and how do I tell them apart from the log?",
+    "tags": ["flutter"]
+  }
+]

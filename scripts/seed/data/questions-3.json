@@ -1,0 +1,424 @@
+[
+  {
+    "id": "b3-01",
+    "title": "Postgres 16 ignores my partial index when the status comes in as a bind parameter",
+    "content": "I have a 14M row `events` table and almost every query only touches pending rows, so I built a partial index:\n\n```sql\nCREATE INDEX events_pending_idx ON events (created_at) WHERE status = 'pending';\n```\n\nRun from psql with the literal inlined, the plan is an `Index Scan using events_pending_idx` in 3 ms. The same query issued by the application as a prepared statement goes back to a sequential scan:\n\n```sql\nPREPARE p(text) AS\n  SELECT id FROM events\n  WHERE status = $1 AND created_at > now() - interval '1 day'\n  ORDER BY created_at LIMIT 100;\nEXPLAIN EXECUTE p('pending');\n-- Seq Scan on events  (cost=0.00..421903.00 rows=98 width=8)\n--   Filter: ((created_at > ...) AND (status = $1))\n```\n\nI ran `ANALYZE events` and bumped the statistics target on `status` with no change. Is the planner simply unable to prove `$1 = 'pending'` matches the index predicate, and is a full index on `(status, created_at)` the only way out?",
+    "tags": [
+      "postgresql"
+    ]
+  },
+  {
+    "id": "b3-02",
+    "title": "deadlock detected between two transactions that update the same two rows in reverse order",
+    "content": "Two API requests transfer credits between the same pair of accounts in opposite directions and roughly one in fifty fails. Both transactions do the same thing:\n\n```sql\nBEGIN;\nUPDATE accounts SET balance = balance - 10 WHERE id = 1;\nUPDATE accounts SET balance = balance + 10 WHERE id = 2;\nCOMMIT;\n```\n\nThe second one runs with the ids swapped. Postgres 16 logs:\n\n```\nERROR:  deadlock detected\nDETAIL:  Process 4711 waits for ShareLock on transaction 90124; blocked by process 4712.\n         Process 4712 waits for ShareLock on transaction 90118; blocked by process 4711.\nHINT:  See server log for query details.\n```\n\nI already tried wrapping the whole thing in `SERIALIZABLE`, which just turns the deadlock into a serialization failure. Is ordering the updates by `id` inside the transaction the accepted fix, or should I be taking an explicit `SELECT ... FOR UPDATE` on both rows first?",
+    "tags": [
+      "postgresql"
+    ]
+  },
+  {
+    "id": "b3-03",
+    "title": "GIN index on jsonb is skipped when I filter with ->> instead of the @> operator",
+    "content": "I store API payloads in a `jsonb` column and indexed it on Postgres 16:\n\n```sql\nCREATE INDEX docs_payload_idx ON docs USING gin (payload jsonb_path_ops);\n```\n\n`SELECT * FROM docs WHERE payload @> '{\"status\":\"active\"}'` uses the index. The query my ORM generates does not:\n\n```sql\nEXPLAIN ANALYZE SELECT id FROM docs WHERE payload ->> 'status' = 'active';\n-- Seq Scan on docs  (rows=1204 width=8) (actual time=0.03..2180.4 rows=51 loops=1)\n--   Filter: ((payload ->> 'status'::text) = 'active'::text)\n```\n\nI understand `jsonb_path_ops` only supports containment, but switching to the default `jsonb_ops` did not help the `->>` form either. Do I need a separate expression index like `CREATE INDEX ON docs ((payload ->> 'status'))`, or is there a way to make the planner rewrite `->>` into a containment check?",
+    "tags": [
+      "postgresql"
+    ]
+  },
+  {
+    "id": "b3-04",
+    "title": "Timestamps shift by two hours after I changed a column from timestamptz to timestamp",
+    "content": "A reporting table on Postgres 16 stored `created_at timestamptz`. To stop the driver from converting values I changed it:\n\n```sql\nALTER TABLE reports ALTER COLUMN created_at TYPE timestamp;\n```\n\nEvery existing row now reads two hours earlier than what the application originally wrote. The server runs with `TimeZone = 'Europe/Warsaw'`:\n\n```sql\nSELECT created_at FROM reports WHERE id = 12;\n-- before: 2026-03-04 14:00:00+01\n-- after:  2026-03-04 13:00:00\n```\n\nI expected the cast to keep the instant and simply drop the offset. Is the `ALTER` applying the session time zone during the conversion, and can I restore the original values without a backup, e.g. by casting back with an explicit `AT TIME ZONE 'UTC'`?",
+    "tags": [
+      "postgresql"
+    ]
+  },
+  {
+    "id": "b3-05",
+    "title": "Prisma 6 behind PgBouncer in transaction mode: prepared statement s0 already exists",
+    "content": "Prisma 6 talks to Postgres 16 through PgBouncer in transaction pooling mode. Simple queries work, but under any concurrency the app starts throwing:\n\n```bash\nPrismaClientUnknownRequestError:\nError occurred during query execution:\nConnectorError { code: \"42P05\", message: \"prepared statement \\\"s0\\\" already exists\" }\n```\n\nThe connection string is:\n\n```bash\nDATABASE_URL=\"postgresql://app:***@pgbouncer:6432/app?connection_limit=10\"\n```\n\nLowering `connection_limit` to 1 makes the error go away, which is obviously not an option in production. I know PgBouncer hands a different server connection to each transaction, so a prepared statement created on one is missing on the next. Is `?pgbouncer=true` on the URL enough on Prisma 6, or do I also need a direct connection for migrations?",
+    "tags": [
+      "prisma",
+      "postgresql"
+    ]
+  },
+  {
+    "id": "b3-06",
+    "title": "MySQL 8 deadlocks on concurrent INSERT ... ON DUPLICATE KEY UPDATE with two unique keys",
+    "content": "I upsert page view counters from several workers into an InnoDB table that has two unique keys:\n\n```sql\nCREATE TABLE views (\n  id BIGINT AUTO_INCREMENT PRIMARY KEY,\n  page_id INT NOT NULL,\n  day DATE NOT NULL,\n  hits INT NOT NULL DEFAULT 0,\n  UNIQUE KEY uq_page_day (page_id, day),\n  UNIQUE KEY uq_slug (slug)\n);\n\nINSERT INTO views (page_id, day, slug, hits) VALUES (?, ?, ?, 1)\nON DUPLICATE KEY UPDATE hits = hits + 1;\n```\n\nWith four workers I get `ERROR 1213 (40001): Deadlock found when trying to get lock; try restarting transaction` a few times a minute. `SHOW ENGINE INNODB STATUS` shows both transactions holding an exclusive lock on one unique index and waiting on the other. Isolation is the default `REPEATABLE READ`. Is the second unique key the actual cause here, and does dropping it (or switching to `READ COMMITTED`) remove the deadlock, or do I just have to retry?",
+    "tags": [
+      "mysql"
+    ]
+  },
+  {
+    "id": "b3-07",
+    "title": "Specified key was too long: max key length is 3072 bytes when Hibernate creates a unique index",
+    "content": "Spring Boot 3.4 with `spring.jpa.hibernate.ddl-auto=update` against MySQL 8 fails on startup when it tries to create the schema for this entity:\n\n```\n@Entity\n@Table(name = \"documents\",\n       uniqueConstraints = @UniqueConstraint(columnNames = {\"tenant_key\", \"external_ref\"}))\npublic class Document {\n    @Id @GeneratedValue Long id;\n    @Column(length = 512) String tenantKey;\n    @Column(length = 512) String externalRef;\n}\n```\n\nThe exception is:\n\n```bash\njava.sql.SQLSyntaxErrorException: Specified key was too long; max key length is 3072 bytes\n```\n\nThe database is `utf8mb4` with `utf8mb4_unicode_ci`, so I make that 512 * 4 * 2 = 4096 bytes. The same code worked on a `latin1` database. Is my only option shortening the columns, or can I keep 512 characters and index a prefix from JPA?",
+    "tags": [
+      "mysql",
+      "spring"
+    ]
+  },
+  {
+    "id": "b3-08",
+    "title": "Query works on MySQL 5.7 but fails on 8.0 with ONLY_FULL_GROUP_BY on a selected column",
+    "content": "After moving from MySQL 5.7 to 8.0 this reporting query stopped working:\n\n```sql\nSELECT o.customer_id, c.name, SUM(o.total) AS revenue\nFROM orders o\nJOIN customers c ON c.id = o.customer_id\nGROUP BY o.customer_id;\n```\n\nMySQL 8 answers:\n\n```bash\nERROR 1055 (42000): Expression #2 of SELECT list is not in GROUP BY clause and\ncontains nonaggregated column 'shop.c.name' which is not functionally dependent\non columns in GROUP BY clause\n```\n\n`c.name` is unique per `c.id` so the value is never ambiguous, but `id` is not what I grouped by. I know I can remove `ONLY_FULL_GROUP_BY` from `sql_mode`, but I would rather fix the query. Is adding `c.name` to `GROUP BY` the right fix, or should I group by `c.id` so the functional dependency is visible to the optimizer?",
+    "tags": [
+      "mysql"
+    ]
+  },
+  {
+    "id": "b3-09",
+    "title": "Read replica returns the previous version of a row immediately after the write on MySQL 8",
+    "content": "We write to the primary and read from a MySQL 8 replica. A POST that creates an order redirects to a page that reads the order back, and maybe one request in twenty renders the old state or a 404. `SHOW REPLICA STATUS` reports:\n\n```bash\nSeconds_Behind_Source: 0\nReplica_SQL_Running_State: Waiting for dependent transaction to commit\n```\n\nso the lag is small but clearly not zero at the moment of the read. Replication is row-based with `sync_binlog=1`.\n\nI do not want to route every read to the primary. Is `WAIT_FOR_EXECUTED_GTID_SET()` with the GTID captured after the write the standard way to make one specific read wait for the replica to catch up, or is that going to serialize the whole request?",
+    "tags": [
+      "mysql"
+    ]
+  },
+  {
+    "id": "b3-10",
+    "title": "E11000 duplicate key error on a unique index when the second document omits the field",
+    "content": "MongoDB 8, collection `users` with a unique index on an optional field:\n\n```javascript\ndb.users.createIndex({ referralCode: 1 }, { unique: true });\n```\n\nMost users have no referral code, so the field is simply absent. The second such insert fails:\n\n```bash\nMongoServerError: E11000 duplicate key error collection: app.users\nindex: referralCode_1 dup key: { referralCode: null }\n```\n\nI expected a missing field to be ignored by the index. Apparently the index stores `null` for every document without the field, so only one of them can exist. Is a partial index the accepted fix here, and does `{ referralCode: { $exists: true } }` as `partialFilterExpression` still guarantee uniqueness for the documents that do have a code?",
+    "tags": [
+      "mongodb"
+    ]
+  },
+  {
+    "id": "b3-11",
+    "title": "MongoDB 8 $lookup does not use the index on the foreign field and the pipeline takes 40s",
+    "content": "I join 200k orders to 500k order lines:\n\n```javascript\ndb.orders.aggregate([\n  { $match: { createdAt: { $gte: ISODate(\"2026-01-01\") } } },\n  { $lookup: {\n      from: \"lines\",\n      let: { oid: \"$_id\" },\n      pipeline: [\n        { $match: { $expr: { $eq: [\"$orderId\", \"$$oid\"] } } },\n        { $project: { qty: 1, price: 1 } }\n      ],\n      as: \"lines\"\n  }}\n]);\n```\n\n`db.lines.getIndexes()` shows `{ orderId: 1 }`. `explain(\"executionStats\")` reports a `COLLSCAN` inside the `$lookup` subpipeline and 40s total. If I use the simple `localField`/`foreignField` form instead, the same join takes 900 ms and shows an `IXSCAN`.\n\nIs the `$expr` form unable to use the index in MongoDB 8, or is there a way to write the `let`/`pipeline` variant so it does?",
+    "tags": [
+      "mongodb"
+    ]
+  },
+  {
+    "id": "b3-12",
+    "title": "MongoDB 8 transaction aborts with WriteConflict when two sessions update the same document",
+    "content": "Two workers decrement stock inside a transaction on a three node replica set:\n\n```javascript\nconst session = client.startSession();\nawait session.withTransaction(async () => {\n  const item = await items.findOne({ _id: id }, { session });\n  if (item.stock < 1) throw new Error(\"out of stock\");\n  await items.updateOne({ _id: id }, { $inc: { stock: -1 } }, { session });\n});\n```\n\nUnder load about a third of them abort with:\n\n```bash\nMongoServerError: Command failed with error 112 (WriteConflict):\n'Caused by :: Write conflict during plan execution and yielding is disabled ::\nPlease retry your operation or multi-document transaction.'\n```\n\n`withTransaction` is supposed to retry transient errors, and it does, but the throughput collapses. Should I drop the transaction entirely and do a single conditional `updateOne({ _id: id, stock: { $gt: 0 } }, { $inc: { stock: -1 } })`, or is there a way to make the transactional version stop conflicting?",
+    "tags": [
+      "mongodb"
+    ]
+  },
+  {
+    "id": "b3-13",
+    "title": "$unwind drops documents with an empty array so my $group counts are too low",
+    "content": "I count orders per customer including the ones with no items. On MongoDB 8:\n\n```javascript\ndb.orders.aggregate([\n  { $unwind: \"$items\" },\n  { $group: { _id: \"$customerId\", orders: { $sum: 1 } } }\n]);\n```\n\nTwo sample documents:\n\n```json\n[\n  { \"_id\": 1, \"customerId\": \"c1\", \"items\": [{ \"sku\": \"a\" }] },\n  { \"_id\": 2, \"customerId\": \"c1\", \"items\": [] }\n]\n```\n\nI expect `orders: 2` for `c1` and get `orders: 1`. `db.orders.countDocuments({ customerId: \"c1\" })` returns 2, so the documents exist. I assume `$unwind` removes documents whose array is empty or missing. Is `preserveNullAndEmptyArrays: true` the correct fix, and will the resulting `$sum: 1` still count each order once rather than once per item?",
+    "tags": [
+      "mongodb"
+    ]
+  },
+  {
+    "id": "b3-14",
+    "title": "Redis 7.4 answers OOM command not allowed when used memory is above maxmemory",
+    "content": "A cache instance with `maxmemory 2gb` started refusing writes:\n\n```bash\n127.0.0.1:6379> SET session:9f1 \"...\"\n(error) OOM command not allowed when used memory > 'maxmemory'.\n```\n\nEvery key I write has a TTL, so I assumed memory would come back on its own. `INFO memory` says:\n\n```bash\nused_memory_human:2.04G\nused_memory_rss_human:2.61G\nmaxmemory_policy:noeviction\nmem_fragmentation_ratio:1.28\n```\n\n`DBSIZE` is 4.1M keys and `SCAN` with `TTL` shows most of them do expire eventually. Is `noeviction` the whole problem here, and if I switch to `allkeys-lru` do I still need to worry about the fragmentation ratio, or is `activedefrag` a separate issue?",
+    "tags": [
+      "redis"
+    ]
+  },
+  {
+    "id": "b3-15",
+    "title": "Redis cache serves a stale row after an update: delete-after-write still loses the race",
+    "content": "Standard read-through cache on Redis 7.4 in front of Postgres:\n\n```javascript\nasync function getUser(id) {\n  const hit = await redis.get(`user:${id}`);\n  if (hit) return JSON.parse(hit);\n  const row = await db.user.findUnique({ where: { id } });\n  await redis.set(`user:${id}`, JSON.stringify(row), { EX: 300 });\n  return row;\n}\n\nasync function updateUser(id, data) {\n  await db.user.update({ where: { id }, data });\n  await redis.del(`user:${id}`);\n}\n```\n\nA few times a day the cache holds the pre-update row for the full 300s TTL. My reading of the interleaving: a reader misses the cache, reads the old row, the writer commits and deletes the (empty) key, then the reader writes its stale value.\n\nI already moved the `DEL` after the commit. Is delayed double delete the usual answer here, or should the read path use `SET ... NX` so a stale value can never overwrite a fresh one?",
+    "tags": [
+      "redis"
+    ]
+  },
+  {
+    "id": "b3-16",
+    "title": "SCAN returns the same key twice and misses keys that were added during the iteration",
+    "content": "I iterate a 3M key database on Redis 7.4 to build a report:\n\n```javascript\nlet cursor = \"0\";\nconst seen = [];\ndo {\n  const res = await redis.scan(cursor, { MATCH: \"session:*\", COUNT: 1000 });\n  cursor = res.cursor;\n  seen.push(...res.keys);\n} while (cursor !== \"0\");\n```\n\n`seen.length` is 812,400 but `new Set(seen).size` is 806,913, so some keys come back more than once. Keys are also being written while the scan runs, and a few of those never appear at all.\n\nThe documentation says a full iteration returns every element present from start to end, but says nothing about elements added in between. Is deduplicating on the client the intended usage, and is there a guarantee I can rely on for keys created mid-scan, or do I need a different approach entirely?",
+    "tags": [
+      "redis"
+    ]
+  },
+  {
+    "id": "b3-17",
+    "title": "ERR Can't execute get: only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE / PING / QUIT are allowed",
+    "content": "I use one Redis 7.4 client for both pub/sub and normal reads:\n\n```javascript\nconst redis = createClient();\nawait redis.connect();\nawait redis.subscribe(\"jobs\", (msg) => console.log(msg));\nconst cached = await redis.get(\"stats:today\"); // throws\n```\n\nThe `GET` fails with:\n\n```bash\nErrorReply: ERR Can't execute 'get': only (P|S)SUBSCRIBE / (P|S)UNSUBSCRIBE /\nPING / QUIT / RESET are allowed in this context\n```\n\nSo a connection in subscriber mode cannot run regular commands. I would rather not pay for two connections per worker. Is `duplicate()` on the client the standard pattern, or does RESP3 let a single connection handle push messages and normal replies at the same time?",
+    "tags": [
+      "redis"
+    ]
+  },
+  {
+    "id": "b3-18",
+    "title": "SQLITE_BUSY: database is locked in WAL mode even though only one process writes",
+    "content": "A Python service on SQLite 3.45 in WAL mode fails intermittently:\n\n```python\ncon = sqlite3.connect(\"app.db\", timeout=5)\ncon.execute(\"PRAGMA journal_mode=WAL\")\ncon.execute(\"BEGIN\")\ncon.execute(\"UPDATE jobs SET state='running' WHERE id=?\", (job_id,))\ncon.commit()  # sqlite3.OperationalError: database is locked\n```\n\nThere is one writer process, but several reader threads share the same file and one of them holds a long `SELECT` over a 400k row table while paging results.\n\nI expected WAL to let readers and a writer coexist. Is the long-running read transaction preventing the WAL checkpoint and thus the commit, and does `PRAGMA busy_timeout` help here, or do I have to make readers finish their transactions explicitly?",
+    "tags": [
+      "sqlite",
+      "python"
+    ]
+  },
+  {
+    "id": "b3-19",
+    "title": "SQLite date range query on a TEXT column returns rows outside the range",
+    "content": "Dates are stored as TEXT because SQLite 3.45 has no date type:\n\n```sql\nCREATE TABLE events (id INTEGER PRIMARY KEY, happened_at TEXT);\nINSERT INTO events (happened_at) VALUES ('2026-1-5'), ('2026-01-05'), ('05/01/2026');\n\nSELECT * FROM events\nWHERE happened_at BETWEEN '2026-01-01' AND '2026-01-31';\n```\n\nOnly the `2026-01-05` row comes back, and a row written as `2026-2-3` also matches because `'2026-2-3' < '2026-01-31'` is false but `'2026-1-9'` compares as greater than `'2026-01-31'`. The comparison is clearly lexicographic, not chronological.\n\nIs normalizing everything to zero padded ISO-8601 on write the only reliable option, or can I wrap the column in `date()` in the WHERE clause and still keep an index usable?",
+    "tags": [
+      "sqlite"
+    ]
+  },
+  {
+    "id": "b3-20",
+    "title": "SQLite deletes a parent row even though the child table has a REFERENCES clause",
+    "content": "Schema on SQLite 3.45:\n\n```sql\nCREATE TABLE authors (id INTEGER PRIMARY KEY, name TEXT);\nCREATE TABLE books (\n  id INTEGER PRIMARY KEY,\n  author_id INTEGER REFERENCES authors(id) ON DELETE RESTRICT\n);\nINSERT INTO authors VALUES (1, 'Ada');\nINSERT INTO books VALUES (1, 1);\nDELETE FROM authors WHERE id = 1;   -- succeeds, leaves an orphan\n```\n\nI expected a constraint error. `SELECT * FROM books` still shows the row with `author_id = 1`. The same schema on Postgres refuses the delete.\n\n`PRAGMA foreign_key_list('books')` does list the constraint, so the declaration is parsed. Is foreign key enforcement off by default per connection, and if I turn it on with `PRAGMA foreign_keys = ON`, does it apply retroactively or only to new statements?",
+    "tags": [
+      "sqlite"
+    ]
+  },
+  {
+    "id": "b3-21",
+    "title": "DataLoader still issues one query per row: batching never happens in my resolver",
+    "content": "Classic N+1: `Post.author` fires one query per post. I added DataLoader but the log is unchanged:\n\n```typescript\nconst posts = {\n  author: (post: Post) => {\n    const loader = new DataLoader((ids: readonly string[]) =>\n      db.user.findMany({ where: { id: { in: [...ids] } } })\n    );\n    return loader.load(post.authorId);\n  },\n};\n```\n\nFor a query returning 50 posts I still see 50 `SELECT ... WHERE id IN ($1)` statements, each with a single id. The batch function is called 50 times with an array of length 1.\n\nI assume a fresh loader per call defeats the whole point since batching happens per loader per tick. Where is the loader supposed to live: one instance per request in the GraphQL context, or a single module-level instance shared across requests?",
+    "tags": [
+      "graphql",
+      "nodejs"
+    ]
+  },
+  {
+    "id": "b3-22",
+    "title": "Cannot return null for non-nullable field User.email although the row has an email",
+    "content": "Schema:\n\n```\ntype User {\n  id: ID!\n  email: String!\n}\ntype Query { me: User }\n```\n\nThe resolver returns a row straight from the database:\n\n```javascript\nconst resolvers = {\n  Query: { me: (_p, _a, ctx) => db.user.findUnique({ where: { id: ctx.userId } }) },\n};\n```\n\nThe response is:\n\n```json\n{ \"data\": { \"me\": null },\n  \"errors\": [{ \"message\": \"Cannot return null for non-nullable field User.email.\" }] }\n```\n\nThe row definitely has an email; logging the resolver result prints `{ id: 1, email_address: 'a@b.c' }`. The column is `email_address` in the database, so the field name and the property name differ. Is a field resolver on `User.email` the right fix, and why does the non-null violation null out the whole `me` field instead of just `email`?",
+    "tags": [
+      "graphql"
+    ]
+  },
+  {
+    "id": "b3-23",
+    "title": "Abstract type SearchResult must resolve to an Object type at runtime for field Query.search",
+    "content": "I added a union:\n\n```\nunion SearchResult = Post | User\ntype Query { search(term: String!): [SearchResult!]! }\n```\n\nThe resolver returns plain rows from two tables and the request fails with:\n\n```json\n{ \"errors\": [{ \"message\": \"Abstract type \\\"SearchResult\\\" must resolve to an Object type at runtime for field \\\"Query.search\\\". Either the \\\"SearchResult\\\" type should provide a \\\"resolveType\\\" function or each possible type should provide an \\\"isTypeOf\\\" function.\" }] }\n```\n\nThe rows have no discriminator field, they are just `{ id, title }` and `{ id, email }`. Adding `__typename` to the objects I return does not seem to be picked up either.\n\nDo I have to implement `SearchResult: { __resolveType(obj) { ... } }` in the resolver map, and is inspecting fields the only way to discriminate, or should I tag the rows in the data layer?",
+    "tags": [
+      "graphql"
+    ]
+  },
+  {
+    "id": "b3-24",
+    "title": "Firestore rules deny a read on a subcollection although the parent document allows it",
+    "content": "These rules let a user read their own document, but reading `users/{uid}/orders` returns `Missing or insufficient permissions`:\n\n```javascript\nrules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /users/{userId} {\n      allow read: if request.auth != null && request.auth.uid == userId;\n    }\n  }\n}\n```\n\nThe client call:\n\n```javascript\nconst snap = await getDocs(collection(db, \"users\", uid, \"orders\"));\n```\n\n`request.auth.uid` is definitely set; reading `users/{uid}` itself works from the same session. I expected the rule on the parent to cover documents underneath it.\n\nDo rules on a document never cascade to its subcollections, and is the fix a separate `match /users/{userId}/orders/{orderId}` block or a recursive `{document=**}` wildcard? I would like to understand which one is safer.",
+    "tags": [
+      "firebase"
+    ]
+  },
+  {
+    "id": "b3-25",
+    "title": "FAILED_PRECONDITION: the query requires an index for a where plus orderBy on another field",
+    "content": "This Firestore query fails at runtime:\n\n```javascript\nconst q = query(\n  collection(db, \"tickets\"),\n  where(\"status\", \"==\", \"open\"),\n  orderBy(\"createdAt\", \"desc\"),\n  limit(20)\n);\n```\n\nwith:\n\n```bash\nFirebaseError: The query requires an index. You can create it here:\nhttps://console.firebase.google.com/... (code: failed-precondition)\n```\n\nThe same query without `orderBy` works, and ordering by `status` works too. Single-field indexes exist automatically for both fields, so I assumed the combination would be handled as well.\n\nIs a composite index mandatory whenever an equality filter and an ordering touch different fields, and does the field order in the composite index have to be `status` then `createdAt` or does it not matter?",
+    "tags": [
+      "firebase"
+    ]
+  },
+  {
+    "id": "b3-26",
+    "title": "onSnapshot fires twice for one write and the first snapshot has a null server timestamp",
+    "content": "I write a message and listen to the collection in the same client:\n\n```javascript\nonSnapshot(collection(db, \"rooms\", roomId, \"messages\"), (snap) => {\n  snap.docs.forEach((d) => console.log(d.id, d.data().createdAt));\n});\nawait addDoc(collection(db, \"rooms\", roomId, \"messages\"), {\n  text, createdAt: serverTimestamp(),\n});\n```\n\nThe listener fires twice for that single `addDoc`. On the first callback `createdAt` is `null`, on the second it holds a real timestamp. My UI renders the message, then re-renders it, and any sort by `createdAt` throws on the null.\n\nI found `snap.metadata.hasPendingWrites` and I suspect the first callback is the local write before the server acknowledges it. Is checking that flag the intended way to skip the optimistic snapshot, or should I use `snapshotOptions` with `serverTimestamps: \"estimate\"` instead?",
+    "tags": [
+      "firebase"
+    ]
+  },
+  {
+    "id": "b3-27",
+    "title": "new row violates row-level security policy for table profiles on insert from the client",
+    "content": "RLS is enabled on `profiles` and this policy exists:\n\n```sql\nCREATE POLICY \"own profile\" ON profiles\n  FOR SELECT USING (auth.uid() = user_id);\n```\n\nSelecting works. Inserting from the browser with the anon key fails:\n\n```bash\n{ code: \"42501\",\n  message: \"new row violates row-level security policy for table \\\"profiles\\\"\" }\n```\n\nThe same insert with the service role key succeeds, which tells me RLS is the blocker rather than the payload. The client is authenticated: `supabase.auth.getUser()` returns a user, and `user_id` in the payload equals that id.\n\nDo I need a separate `FOR INSERT ... WITH CHECK (auth.uid() = user_id)` policy, since a `USING` clause on a SELECT policy does not apply to inserts at all?",
+    "tags": [
+      "supabase",
+      "postgresql"
+    ]
+  },
+  {
+    "id": "b3-28",
+    "title": "Supabase realtime delivers INSERT events but old_record is empty on UPDATE and DELETE",
+    "content": "I subscribe to a table and receive events, but the payload is incomplete:\n\n```javascript\nsupabase.channel(\"todos\")\n  .on(\"postgres_changes\", { event: \"*\", schema: \"public\", table: \"todos\" },\n      (payload) => console.log(payload.eventType, payload.old, payload.new))\n  .subscribe();\n```\n\nOn INSERT I get the full new row. On UPDATE, `payload.old` is `{ id: 42 }`. On DELETE it is `{ id: 42 }` as well, with no other columns.\n\nI need the previous values to diff them client side. The table is in the `supabase_realtime` publication, otherwise nothing would arrive at all.\n\nIs this the default `REPLICA IDENTITY` only shipping the primary key, and is `ALTER TABLE todos REPLICA IDENTITY FULL` the supported fix on Supabase, or does that break RLS filtering on realtime?",
+    "tags": [
+      "supabase",
+      "postgresql"
+    ]
+  },
+  {
+    "id": "b3-29",
+    "title": "Supabase storage signed URL returns 403 for a bucket that works with the service role key",
+    "content": "Uploads from a server route work with the service role key. Creating a signed URL from the browser session fails:\n\n```javascript\nconst { data, error } = await supabase.storage\n  .from(\"invoices\")\n  .createSignedUrl(`${user.id}/2026-01.pdf`, 60);\n// error: { statusCode: \"403\", message: \"new row violates row-level security policy\" }\n```\n\nThe bucket is private. I added a policy on `storage.objects`:\n\n```sql\nCREATE POLICY \"own files\" ON storage.objects\n  FOR SELECT USING (bucket_id = 'invoices' AND auth.uid()::text = owner);\n```\n\n`owner` is null for the objects the server uploaded with the service role, which I think is why the policy never matches. Should the policy match on the first path segment via `(storage.foldername(name))[1]` instead of `owner`, and is `owner` reliable at all for server side uploads?",
+    "tags": [
+      "supabase"
+    ]
+  },
+  {
+    "id": "b3-30",
+    "title": "Prisma 6 interactive transaction fails with P2028 Transaction already closed after 5s",
+    "content": "An import endpoint does a few hundred writes inside one interactive transaction:\n\n```typescript\nawait prisma.$transaction(async (tx) => {\n  for (const row of rows) {\n    await tx.item.upsert({\n      where: { sku: row.sku },\n      create: row,\n      update: { price: row.price },\n    });\n  }\n});\n```\n\nWith ~400 rows it throws:\n\n```bash\nPrismaClientKnownRequestError: Transaction already closed:\nA commit cannot be executed on an expired transaction. (code: P2028)\n```\n\nUnder 100 rows it always passes, so this looks like the default interactive transaction timeout rather than a data problem. Raising `timeout` in the options object works, but holding a transaction open for a minute feels wrong.\n\nIs `createMany` with `skipDuplicates` plus a follow-up `updateMany` the right shape here, or should I chunk the loop into several shorter transactions?",
+    "tags": [
+      "prisma",
+      "typescript"
+    ]
+  },
+  {
+    "id": "b3-31",
+    "title": "prisma migrate deploy stops with P3009: migrate found failed migrations in the database",
+    "content": "A migration failed halfway on staging (a `NOT NULL` column added to a table that had nulls). Every subsequent deploy now aborts before doing anything:\n\n```bash\nError: P3009\nmigrate found failed migrations in the target database, new migrations\nwill not be applied.\nThe `20260114093012_add_required_slug` migration started at ... failed\n```\n\nThe database is in a mixed state: the column exists but is nullable, because the `ALTER` ran and the backfill did not.\n\n`_prisma_migrations` has the row with `finished_at = NULL` and `rolled_back_at = NULL`. Should I fix the schema by hand and then run `prisma migrate resolve --applied`, or `--rolled-back` and re-apply a corrected migration? I want to understand which one leaves the history consistent for the other environments.",
+    "tags": [
+      "prisma"
+    ]
+  },
+  {
+    "id": "b3-32",
+    "title": "Prisma upsert throws P2002 unique constraint failed under concurrent requests",
+    "content": "Two requests for the same user arrive at the same time and one of them fails:\n\n```typescript\nawait prisma.profile.upsert({\n  where: { userId },\n  create: { userId, views: 1 },\n  update: { views: { increment: 1 } },\n});\n```\n\n```bash\nPrismaClientKnownRequestError: Unique constraint failed on the fields: (`userId`)\n(code: P2002)\n```\n\n`userId` has `@unique` in the schema:\n\n```\nmodel Profile {\n  id     Int    @id @default(autoincrement())\n  userId Int    @unique\n  views  Int    @default(0)\n}\n```\n\nAs far as I can tell `upsert` is a `SELECT` followed by `INSERT` or `UPDATE`, so two requests can both decide to insert. Does Prisma 6 emit a native `INSERT ... ON CONFLICT` for this case on Postgres, and if not, is catching P2002 and retrying the accepted pattern?",
+    "tags": [
+      "prisma",
+      "postgresql"
+    ]
+  },
+  {
+    "id": "b3-33",
+    "title": "Errors thrown in an async Express route never reach my error-handling middleware",
+    "content": "Express 4 app. Synchronous throws are handled, async ones hang the request until the client times out:\n\n```javascript\napp.get(\"/users/:id\", async (req, res) => {\n  const user = await db.findUser(req.params.id); // rejects\n  res.json(user);\n});\n\napp.use((err, req, res, next) => {\n  console.error(err);\n  res.status(500).json({ error: \"internal\" });\n});\n```\n\nNothing is logged and the response never arrives. The process prints an `UnhandledPromiseRejection` warning instead.\n\nI understand Express 4 does not await the handler, so a rejected promise is invisible to it. Is wrapping every handler in a `catch(next)` helper the standard answer, or does Express 5 handle rejected promises from handlers natively so I can drop the wrapper?",
+    "tags": [
+      "express",
+      "nodejs"
+    ]
+  },
+  {
+    "id": "b3-34",
+    "title": "ERR_HTTP_HEADERS_SENT after calling next() and res.json() in the same middleware",
+    "content": "Auth middleware occasionally crashes the request:\n\n```javascript\nfunction requireUser(req, res, next) {\n  if (!req.headers.authorization) {\n    res.status(401).json({ error: \"unauthorized\" });\n  }\n  next();\n}\napp.get(\"/me\", requireUser, (req, res) => res.json(req.user));\n```\n\n```bash\nError [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client\n    at ServerResponse.setHeader (node:_http_outgoing:659:11)\n```\n\nFor an unauthenticated request the 401 is written and then `next()` runs the route anyway, which responds a second time.\n\nThe obvious fix is `return res.status(401)...`. I would also like to know whether an early `return next(err)` into the error middleware is preferable, and whether checking `res.headersSent` in the error handler is a reasonable guard for the general case.",
+    "tags": [
+      "express"
+    ]
+  },
+  {
+    "id": "b3-35",
+    "title": "req.body is undefined in a POST route although the client sends application/json",
+    "content": "Express 4, minimal app:\n\n```javascript\nconst app = express();\n\napp.post(\"/items\", (req, res) => {\n  console.log(req.body); // undefined\n  res.sendStatus(201);\n});\n\napp.use(express.json());\napp.listen(3000);\n```\n\nThe request is:\n\n```bash\ncurl -X POST localhost:3000/items -H 'Content-Type: application/json' -d '{\"name\":\"a\"}'\n```\n\n`req.body` prints `undefined`, not `{}`. If I move `app.use(express.json())` above the route it works.\n\nSo middleware only applies to routes registered after it, which I did not expect from something that looks like global configuration. Is that the actual rule for `app.use`, and is there any reason to register body parsing per-route rather than once at the top?",
+    "tags": [
+      "express"
+    ]
+  },
+  {
+    "id": "b3-36",
+    "title": "DRF serializer runs one query per row for a reverse FK despite prefetch_related",
+    "content": "Django 5.1 with DRF. The list endpoint issues 1 + N queries:\n\n```python\nclass AuthorSerializer(serializers.ModelSerializer):\n    recent_books = serializers.SerializerMethodField()\n\n    def get_recent_books(self, obj):\n        return [b.title for b in obj.books.filter(published=True)[:3]]\n\nclass AuthorViewSet(viewsets.ModelViewSet):\n    queryset = Author.objects.prefetch_related(\"books\")\n    serializer_class = AuthorSerializer\n```\n\ndjango-debug-toolbar shows 1 query for authors and 100 for books, so the prefetch is not being used at all.\n\nI think calling `.filter()` on the prefetched manager discards the cache and re-queries. Is `Prefetch(\"books\", queryset=Book.objects.filter(published=True), to_attr=\"published_books\")` the right way to keep the filter and the prefetch, and how do I get only three per author without a per-row query?",
+    "tags": [
+      "django",
+      "python"
+    ]
+  },
+  {
+    "id": "b3-37",
+    "title": "RuntimeWarning: DateTimeField received a naive datetime while time zone support is active",
+    "content": "Django 5.1 with `USE_TZ = True` and `TIME_ZONE = \"Europe/Warsaw\"`. This code warns on every run:\n\n```python\nfrom datetime import datetime\nReport.objects.filter(created_at__lt=datetime(2026, 1, 1))\n```\n\n```bash\nRuntimeWarning: DateTimeField Report.created_at received a naive datetime\n(2026-01-01 00:00:00) while time zone support is active.\n```\n\nThe results are also off by an hour compared to what I see in the admin, which I assume is the naive value being interpreted as UTC.\n\nIs `django.utils.timezone.make_aware` the right call here, or should I build the value with `timezone.now()` arithmetic? I also want to know whether `__date` lookups apply the current time zone or UTC, because that is where my daily aggregates seem to shift.",
+    "tags": [
+      "django",
+      "python"
+    ]
+  },
+  {
+    "id": "b3-38",
+    "title": "Filtering twice on a reverse FK returns duplicated rows and inflates my annotate Count",
+    "content": "Django 5.1. I want authors who have both a 2025 book and a 2026 book:\n\n```python\nAuthor.objects.filter(books__year=2025).filter(books__year=2026).annotate(\n    n=Count(\"books\")\n)\n```\n\nAn author with three books shows up with `n=9`, and some authors appear more than once in the result list. The generated SQL contains two separate joins to `books`, so the counted rows are the cross product.\n\nChaining into one `filter(books__year=2025, books__year=2026)` is not equivalent, it matches a single book that is both years and returns nothing.\n\nIs `Count(\"books\", distinct=True)` enough here, or does the double join still break the semantics of the count? Is a subquery with `Exists()` per year the better shape for this?",
+    "tags": [
+      "django"
+    ]
+  },
+  {
+    "id": "b3-39",
+    "title": "Django 5.1 migration hangs on ALTER TABLE and blocks every query in production",
+    "content": "This migration ran for 40 seconds on staging and locked the whole table in production:\n\n```python\noperations = [\n    migrations.AddField(\n        model_name=\"order\",\n        name=\"channel\",\n        field=models.CharField(max_length=32, default=\"web\"),\n    ),\n]\n```\n\nWhile it ran, `pg_stat_activity` showed dozens of queries in `wait_event_type = Lock` behind an `AccessExclusiveLock` on `orders` (18M rows, Postgres 16). Requests timed out.\n\nOn Postgres 16 adding a column with a constant default should be metadata only, so I suspect the real cost was something else in the same transaction, or the migration waiting to acquire the lock behind a long running read.\n\nIs setting `lock_timeout` before the migration and retrying the accepted practice, and should the column be added as nullable first with the default backfilled separately?",
+    "tags": [
+      "django",
+      "postgresql"
+    ]
+  },
+  {
+    "id": "b3-40",
+    "title": "DetachedInstanceError: Instance is not bound to a Session after returning from a helper",
+    "content": "Flask 3 with Flask-SQLAlchemy. This view raises on the last line:\n\n```python\ndef load_user(uid):\n    with db.session.begin():\n        return db.session.get(User, uid)\n\n@app.get(\"/me\")\ndef me():\n    user = load_user(session[\"uid\"])\n    return {\"email\": user.email, \"org\": user.organization.name}\n```\n\n```bash\nsqlalchemy.orm.exc.DetachedInstanceError: Parent instance <User at 0x7f...>\nis not bound to a Session; lazy load operation of attribute 'organization'\ncannot proceed\n```\n\n`user.email` works, only the relationship fails, so the object is expired/detached and the lazy load has no session to use.\n\nShould the helper return a plain dict instead of an ORM object, or is the fix eager loading with `selectinload(User.organization)` inside the same session block? I would like to know which one is the conventional Flask pattern.",
+    "tags": [
+      "flask",
+      "python"
+    ]
+  },
+  {
+    "id": "b3-41",
+    "title": "Working outside of application context when I query the database from a background thread",
+    "content": "Flask 3, a request kicks off a thread that writes an audit row:\n\n```python\n@app.post(\"/import\")\ndef start_import():\n    threading.Thread(target=run_import, args=(request.json,)).start()\n    return {\"status\": \"started\"}, 202\n\ndef run_import(payload):\n    db.session.add(ImportLog(payload=payload))\n    db.session.commit()\n```\n\nThe thread dies with:\n\n```bash\nRuntimeError: Working outside of application context.\nThis typically means that you attempted to use functionality that needed\nthe current application. To solve this, set up an application context\nwith app.app_context().\n```\n\nI know `current_app` and the scoped session are bound to a context that the thread does not inherit. Wrapping the body in `with app.app_context():` removes the error, but I am not sure whether the session is then shared with the request thread or a fresh one. Which is it, and does `db.session.remove()` at the end matter here?",
+    "tags": [
+      "flask",
+      "python"
+    ]
+  },
+  {
+    "id": "b3-42",
+    "title": "QueuePool limit of size 5 overflow 10 reached, connection timed out, timeout 30.00",
+    "content": "Under moderate load (about 60 concurrent requests) a Flask 3 API starts failing:\n\n```bash\nsqlalchemy.exc.TimeoutError: QueuePool limit of size 5 overflow 10 reached,\nconnection timed out, timeout 30.00 (Background on this error at:\nhttps://sqlalche.me/e/20/3o7r)\n```\n\nConfig:\n\n```python\napp.config[\"SQLALCHEMY_ENGINE_OPTIONS\"] = {\"pool_size\": 5, \"max_overflow\": 10}\n```\n\nPostgres `max_connections` is 100 and `pg_stat_activity` shows only 15 connections from this service, all `idle in transaction`. That points at connections never being returned rather than the pool being too small.\n\nI have one endpoint that opens a session, calls an external HTTP API and commits afterwards. Is that the leak, and is a teardown handler calling `db.session.remove()` the standard guard, or should the pool be bigger regardless?",
+    "tags": [
+      "flask",
+      "postgresql"
+    ]
+  },
+  {
+    "id": "b3-43",
+    "title": "Laravel 11 validation rejects a profile update with the email has already been taken",
+    "content": "Updating a user's own profile without changing the email fails validation:\n\n```\npublic function update(Request $request, User $user)\n{\n    $data = $request->validate([\n        'email' => ['required', 'email', 'unique:users,email'],\n        'name'  => ['required', 'string', 'max:120'],\n    ]);\n\n    $user->update($data);\n    return redirect()->route('profile.show');\n}\n```\n\nThe message is `The email has already been taken.` The row it collides with is the user's own record, so the rule is comparing against the user I am editing.\n\nI know there is an ignore form of the rule. Should it be `Rule::unique('users')->ignore($user->id)`, and does that still protect against a real collision with another account? I would also like to know if soft deleted users are considered by that rule.",
+    "tags": [
+      "laravel",
+      "php"
+    ]
+  },
+  {
+    "id": "b3-44",
+    "title": "Laravel 11 Sanctum returns 419 CSRF token mismatch for a SPA on a different subdomain",
+    "content": "SPA on `app.example.test`, API on `api.example.test`, Laravel 11 with Sanctum SPA authentication. The call to `/sanctum/csrf-cookie` succeeds and sets `XSRF-TOKEN`, but the login POST fails with `419 CSRF token mismatch`.\n\n```\n// config/sanctum.php\n'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', 'localhost')),\n\n// .env\nSESSION_DOMAIN=api.example.test\nSANCTUM_STATEFUL_DOMAINS=app.example.test\n```\n\nThe browser does send the cookie on the login request and `withCredentials` is on.\n\nMy guess is `SESSION_DOMAIN` is scoped too narrowly, so the SPA origin cannot read the cookie back. Should it be `.example.test` with a leading dot, and does `SANCTUM_STATEFUL_DOMAINS` need the port when running on a non-standard one?",
+    "tags": [
+      "laravel",
+      "php"
+    ]
+  },
+  {
+    "id": "b3-45",
+    "title": "Blade view fires 200 queries: N+1 on a nested relation that with() does not cover",
+    "content": "Laravel 11, the orders index page issues roughly 200 queries for 50 orders:\n\n```\n$orders = Order::with('customer')->latest()->paginate(50);\n```\n\n```\n@foreach ($orders as $order)\n  {{ $order->customer->name }}\n  {{ $order->items->sum('price') }}\n  {{ $order->items->first()?->product->name }}\n@endforeach\n```\n\nTelescope shows one query per order for `items` and one per item for `product`. `customer` is loaded once, so the eager load itself works.\n\nI assume `with('items.product')` fixes the nested access, but I also want the sum without loading every item. Is `withSum('items', 'price')` the right tool there, and does combining it with `with('items.product')` still produce a single extra query per relation rather than per row?",
+    "tags": [
+      "laravel",
+      "php"
+    ]
+  },
+  {
+    "id": "b3-46",
+    "title": "LazyInitializationException: could not initialize proxy after the transaction commits",
+    "content": "Spring Boot 3.4, JPA with Hibernate 6. The service returns an entity and the controller serializes it:\n\n```\n@Transactional(readOnly = true)\npublic Order findOrder(Long id) {\n    return orderRepository.findById(id).orElseThrow();\n}\n```\n\n```\n@Entity\npublic class Order {\n    @Id Long id;\n    @ManyToOne(fetch = FetchType.LAZY) Customer customer;\n    @OneToMany(mappedBy = \"order\") List<OrderLine> lines;\n}\n```\n\nSerialization fails with:\n\n```bash\norg.hibernate.LazyInitializationException: could not initialize proxy\n[com.example.Order$HibernateProxy] - no Session\n```\n\n`spring.jpa.open-in-view` is set to `false`, which I did on purpose. Is a JPQL query with `join fetch` or an `@EntityGraph` on the repository method the right fix, and is returning a DTO from inside the transaction the more robust option?",
+    "tags": [
+      "spring",
+      "java"
+    ]
+  },
+  {
+    "id": "b3-47",
+    "title": "MultipleBagFetchException: cannot simultaneously fetch multiple bags with two join fetch",
+    "content": "Spring Boot 3.4 fails to start after I added a second `join fetch`:\n\n```\n@Query(\"select o from Order o join fetch o.lines join fetch o.payments where o.id = :id\")\nOptional<Order> findFullOrder(@Param(\"id\") Long id);\n```\n\n```bash\norg.hibernate.loader.MultipleBagFetchException: cannot simultaneously fetch\nmultiple bags: [com.example.Order.lines, com.example.Order.payments]\n```\n\nBoth associations are declared as `List` without an `@OrderColumn`, so Hibernate treats them as bags and cannot tell the cartesian product apart.\n\nChanging both to `Set` removes the exception, but then one query returns `lines.size() * payments.size()` rows over the wire. Is two separate queries in the same transaction (letting the persistence context stitch them together) the recommended shape, or does `@BatchSize` solve this without the cartesian product?",
+    "tags": [
+      "spring",
+      "java"
+    ]
+  },
+  {
+    "id": "b3-48",
+    "title": "Rails 8 includes with a where on the association raises a missing FROM-clause entry",
+    "content": "Rails 8 with Postgres. This scope blows up:\n\n```\nAuthor.includes(:books).where(\"books.year = ?\", 2026)\n```\n\n```bash\nActiveRecord::StatementInvalid: PG::UndefinedTable: ERROR:\nmissing FROM-clause entry for table \"books\"\n```\n\nIf I add `.references(:books)` it works, and the log then shows one `LEFT OUTER JOIN` instead of two separate queries.\n\nSo `includes` sometimes preloads with a second query and sometimes joins, and a raw SQL condition forces the join without telling it. Is `references` always required with a string condition, and does using the hash form `where(books: { year: 2026 })` make it unnecessary? I would like to know which one to standardize on.",
+    "tags": [
+      "rails",
+      "postgresql"
+    ]
+  },
+  {
+    "id": "b3-49",
+    "title": "after_commit callback never runs in tests but works in development on Rails 8",
+    "content": "The model enqueues a job after commit:\n\n```\nclass Order < ApplicationRecord\n  after_commit :notify_warehouse, on: :create\nend\n```\n\nIn development the job is enqueued. In the test suite the callback is never called:\n\n```\ntest \"enqueues a warehouse job\" do\n  assert_enqueued_jobs 1 do\n    Order.create!(total: 10)\n  end\nend\n```\n\n`assert_enqueued_jobs` fails with `0 instead of 1`. The record is created, other callbacks such as `after_save` do fire.\n\n`use_transactional_tests` is on, so the test runs inside a transaction that never commits, which I assume is why `after_commit` is skipped. Is `self.use_transactional_tests = false` for that one test the usual answer, or is there a supported way to run the commit callbacks inside the test transaction?",
+    "tags": [
+      "rails"
+    ]
+  },
+  {
+    "id": "b3-50",
+    "title": "ActiveRecord::Deadlocked when two jobs increment counter_cache on the same parent row",
+    "content": "Rails 8, Postgres 16. Two background jobs create comments on the same post and one of them dies:\n\n```\nclass Comment < ApplicationRecord\n  belongs_to :post, counter_cache: true\nend\n```\n\n```bash\nActiveRecord::Deadlocked: PG::TRDeadlockDetected: ERROR: deadlock detected\nDETAIL: Process 8812 waits for ShareLock on transaction 55231; blocked by\nprocess 8813.\n```\n\nEach job inserts several comments in one transaction, so both hold the `posts` row lock for the counter update and touch other rows in between.\n\nThe rate is low but nonzero and it takes a job to the dead letter queue. Should I drop `counter_cache` in favour of a periodic recount, or is ordering the inserts and moving the counter update to the very end of the transaction enough to make the lock order consistent?",
+    "tags": [
+      "rails",
+      "postgresql"
+    ]
+  }
+]

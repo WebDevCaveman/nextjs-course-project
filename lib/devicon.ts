@@ -8,6 +8,9 @@ const ALIASES: Record<string, string> = {
   postgres: "postgresql",
   tailwind: "tailwindcss",
   k8s: "kubernetes",
+  // "amazonwebservices" ma 17 znakow, a AskQuestionSchema tnie nazwe tagu na 15 - "aws"
+  // jest wiec jedyna forma, jaka da sie zapisac, i musi trafiac w te sama ikone i opis.
+  aws: "amazonwebservices",
   mongo: "mongodb",
   html: "html5",
   css: "css3",

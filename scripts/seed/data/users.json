@@ -1,0 +1,218 @@
+[
+  {
+    "name": "Amara Okonkwo",
+    "username": "amara_okonkwo",
+    "email": "amara.okonkwo@devflow.test",
+    "bio": "Backend engineer. Spends most of her time making Postgres queries stop being slow.",
+    "location": "Lagos, Nigeria",
+    "portfolio": "https://amaraokonkwo.dev"
+  },
+  {
+    "name": "Tobias Lindqvist",
+    "username": "tlindqvist",
+    "email": "tobias.lindqvist@devflow.test",
+    "bio": "SRE at a payments company. Runs Kubernetes so other people do not have to. Still not convinced service meshes were worth it.",
+    "location": "Stockholm, Sweden",
+    "portfolio": "https://github.com/tlindqvist"
+  },
+  {
+    "name": "Priya Raghunathan",
+    "username": "priya_rg",
+    "email": "priya.raghunathan@devflow.test",
+    "bio": "Android developer, eight years in. Currently migrating a 200k-line codebase off Fragments and regretting every optimistic estimate.",
+    "location": "Bengaluru, India",
+    "portfolio": "https://priyarg.io"
+  },
+  {
+    "name": "Mateusz Wojciechowski",
+    "username": "mwojciechowski",
+    "email": "mateusz.wojciechowski@devflow.test",
+    "bio": "Embedded C on ARM Cortex-M. Interested in why the linker script does what it does. Distrusts anything that allocates.",
+    "location": "Wroclaw, Poland"
+  },
+  {
+    "name": "Sofia Marchetti",
+    "username": "sofiamarchetti",
+    "email": "sofia.marchetti@devflow.test",
+    "bio": "Frontend, mostly React and CSS. Writes about layout bugs that only appear in Safari.",
+    "location": "Milan, Italy",
+    "portfolio": "https://sofiamarchetti.github.io"
+  },
+  {
+    "name": "Daniel Osei",
+    "username": "danosei",
+    "email": "daniel.osei@devflow.test",
+    "bio": "Freelance full stack. Ships Rails and Postgres for small businesses. Will argue that most SaaS could be a cron job and a table.",
+    "location": "Accra, Ghana",
+    "portfolio": "https://danosei.com"
+  },
+  {
+    "name": "Yuki Tanabe",
+    "username": "yuki_tanabe",
+    "email": "yuki.tanabe@devflow.test",
+    "bio": "Game developer working in Unity and a bit of custom C++. Spends too long on frame pacing for a game nobody has played yet.",
+    "location": "Osaka, Japan",
+    "portfolio": "https://yukitanabe.dev"
+  },
+  {
+    "name": "Ana Lucia Ferreira",
+    "username": "analuciaferreira",
+    "email": "ana.ferreira@devflow.test",
+    "bio": "Data engineer. Airflow, dbt, and a long-running argument about whether the warehouse should own business logic.",
+    "location": "Sao Paulo, Brazil",
+    "portfolio": "https://analucia.dev"
+  },
+  {
+    "name": "Callum Reid",
+    "username": "callum_reid",
+    "email": "callum.reid@devflow.test",
+    "bio": "QA engineer who writes more code than most developers I test for. Flaky tests are a design problem, not a retry setting.",
+    "location": "Melbourne, Australia",
+    "portfolio": "https://github.com/callum-reid"
+  },
+  {
+    "name": "Nadia Haddad",
+    "username": "nadiahaddad",
+    "email": "nadia.haddad@devflow.test",
+    "bio": "Application security. Reads other people's authentication code for a living and rarely enjoys it.",
+    "location": "Beirut, Lebanon",
+    "portfolio": "https://nadiahaddad.io"
+  },
+  {
+    "name": "Jonas Brandt",
+    "username": "jbrandt",
+    "email": "jonas.brandt@devflow.test",
+    "bio": "Tech lead for a small platform team. Half my week is code, half is convincing people not to add another queue.",
+    "location": "Berlin, Germany",
+    "portfolio": "https://jonasbrandt.dev"
+  },
+  {
+    "name": "Grace Whitfield",
+    "username": "gracewhitfield",
+    "email": "grace.whitfield@devflow.test",
+    "bio": "Retired sysadmin. Ran mail and DNS for a university for twenty-two years. Still keeps a FreeBSD box in the basement out of habit.",
+    "location": "Bristol, United Kingdom"
+  },
+  {
+    "name": "Kenji Morikawa",
+    "username": "kenji_m",
+    "email": "kenji.morikawa@devflow.test",
+    "bio": "Compiler and runtime work, mostly on the JVM. Interested in escape analysis and why it gives up more often than the docs suggest.",
+    "location": "Tokyo, Japan",
+    "portfolio": "https://kenjimorikawa.dev"
+  },
+  {
+    "name": "Isabela Rojas",
+    "username": "isabelarojas",
+    "email": "isabela.rojas@devflow.test",
+    "bio": "Second-year CS student. Learning Go by rewriting small Unix tools badly and then reading the real source.",
+    "location": "Bogota, Colombia",
+    "portfolio": "https://isabelarojas.github.io"
+  },
+  {
+    "name": "Aleksei Vorobyov",
+    "username": "avorobyov",
+    "email": "aleksei.vorobyov@devflow.test",
+    "bio": "Distributed systems, Rust and a lot of Go. Currently annoyed by how hard it is to test partial network failures honestly.",
+    "location": "Tbilisi, Georgia",
+    "portfolio": "https://github.com/avorobyov"
+  },
+  {
+    "name": "Marie Delacroix",
+    "username": "mdelacroix",
+    "email": "marie.delacroix@devflow.test",
+    "bio": "Teaches web development at a technical college and writes the course material herself because the textbooks are four frameworks behind.",
+    "location": "Lyon, France",
+    "portfolio": "https://mariedelacroix.com"
+  },
+  {
+    "name": "Ravi Shankar Menon",
+    "username": "ravimenon",
+    "email": "ravi.menon@devflow.test",
+    "bio": "Twenty years of backend Java, now mostly Kotlin. Has migrated the same domain model across three architectures and has opinions about all of them.",
+    "location": "Kochi, India",
+    "portfolio": "https://ravimenon.dev"
+  },
+  {
+    "name": "Elena Petrova",
+    "username": "elena_petrova",
+    "email": "elena.petrova@devflow.test",
+    "bio": "ML engineer working on recommendation ranking. More of my job is data leakage detection than modelling.",
+    "location": "Amsterdam, Netherlands",
+    "portfolio": "https://elenapetrova.io"
+  },
+  {
+    "name": "Marcus Oyelaran",
+    "username": "marcusoye",
+    "email": "marcus.oyelaran@devflow.test",
+    "bio": "iOS developer. Swift concurrency convert, still finding actor reentrancy bugs from the migration.",
+    "location": "Toronto, Canada",
+    "portfolio": "https://marcusoye.dev"
+  },
+  {
+    "name": "Linh Nguyen",
+    "username": "linhnguyen",
+    "email": "linh.nguyen@devflow.test",
+    "bio": "Platform engineer. Builds internal tooling and CI pipelines. Believes most build slowness is caching that was never configured.",
+    "location": "Ho Chi Minh City, Vietnam",
+    "portfolio": "https://github.com/linhnguyen-dev"
+  },
+  {
+    "name": "Stefan Novak",
+    "username": "stefannovak",
+    "email": "stefan.novak@devflow.test",
+    "bio": "Works on billing systems. Money in floats is a personal enemy. Knows more about timezone edge cases than he wanted to.",
+    "location": "Ljubljana, Slovenia"
+  },
+  {
+    "name": "Fatima Al Rashid",
+    "username": "fatima_ar",
+    "email": "fatima.alrashid@devflow.test",
+    "bio": "Cloud architect, mostly AWS. Spends a lot of time explaining that a Lambda is not free just because it is idle.",
+    "location": "Dubai, United Arab Emirates",
+    "portfolio": "https://fatimaalrashid.dev"
+  },
+  {
+    "name": "Hugo Almeida",
+    "username": "hugoalmeida",
+    "email": "hugo.almeida@devflow.test",
+    "bio": "Junior backend developer, one year in. Currently trying to understand database transaction isolation properly instead of guessing.",
+    "location": "Porto, Portugal",
+    "portfolio": "https://hugoalmeida.github.io"
+  },
+  {
+    "name": "Sarah Kimani",
+    "username": "sarahkimani",
+    "email": "sarah.kimani@devflow.test",
+    "bio": "Builds offline-first mobile apps for low-bandwidth regions. Sync conflict resolution is the whole job.",
+    "location": "Nairobi, Kenya",
+    "portfolio": "https://sarahkimani.io"
+  },
+  {
+    "name": "Peter Halvorsen",
+    "username": "phalvorsen",
+    "email": "peter.halvorsen@devflow.test",
+    "bio": "DevOps for an industrial firm. Terraform, on-prem hardware, and systems older than some of my colleagues.",
+    "location": "Trondheim, Norway"
+  },
+  {
+    "name": "Wei Chen",
+    "username": "weichen",
+    "email": "wei.chen@devflow.test",
+    "bio": "Frontend performance work. Measures things before changing them, which turns out to be a rare position.",
+    "portfolio": "https://weichen.dev"
+  },
+  {
+    "name": "Camila Vargas",
+    "username": "camilavargas",
+    "email": "camila.vargas@devflow.test",
+    "bio": "Full stack developer at a logistics startup. TypeScript everywhere, some Python where the maps happen.",
+    "portfolio": "https://camilavargas.blog"
+  },
+  {
+    "name": "Owen Baptiste",
+    "username": "owen_baptiste",
+    "email": "owen.baptiste@devflow.test",
+    "bio": "Database administrator turned consultant. Called in when replication lag becomes a business problem."
+  }
+]

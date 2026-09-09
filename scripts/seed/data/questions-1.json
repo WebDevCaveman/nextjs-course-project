@@ -1,0 +1,302 @@
+[
+  {
+    "id": "b1-01",
+    "title": "setInterval inside useEffect always reads the initial state value",
+    "content": "I have a counter that should tick once a second, but the rendered value gets stuck at 1.\n\n```javascript\nfunction Counter() {\n  const [count, setCount] = useState(0);\n\n  useEffect(() => {\n    const id = setInterval(() => {\n      setCount(count + 1);\n    }, 1000);\n    return () => clearInterval(id);\n  }, []);\n\n  return <p>{count}</p>;\n}\n```\n\nI expected 1, 2, 3, ... and I get 0, then 1, then nothing. React 19.2 in a plain Vite app; I already removed StrictMode to rule out the double mount, no difference. If I add `count` to the dependency array it does count up, but then the interval is cleared and recreated on every tick and my timestamps drift by 20-40ms each second. Why does the callback keep seeing `count === 0` when the component clearly re-rendered?",
+    "tags": ["react", "javascript"]
+  },
+  {
+    "id": "b1-02",
+    "title": "TypeScript says my useRef value is possibly null after I already checked it",
+    "content": "I guard the ref before using it, but the compiler still complains inside the timeout.\n\n```typescript\nconst inputRef = useRef<HTMLInputElement>(null);\n\nconst focusLater = () => {\n  if (!inputRef.current) return;\n  setTimeout(() => {\n    inputRef.current.focus();\n    //       ~~~~~~~ Object is possibly 'null'. ts(2531)\n  }, 100);\n};\n```\n\nThe early return is right there two lines above, so I expected the narrowing to hold. TypeScript 5.9, strict mode on. Moving the check inside the timeout callback silences it, but I do not understand why the outer one is not enough, and I would rather not sprinkle `!` everywhere. Is this about `current` being mutable, or about the callback boundary?",
+    "tags": ["react", "typescript"]
+  },
+  {
+    "id": "b1-03",
+    "title": "Hydration mismatch on a date rendered with toLocaleDateString in Next.js 16",
+    "content": "A server component renders a formatted date and the browser console throws a hydration error on every load.\n\n```javascript\nexport default function PostMeta({ createdAt }) {\n  return <time dateTime={createdAt}>{new Date(createdAt).toLocaleDateString()}</time>;\n}\n```\n\nThe error says the server rendered `1/5/2026` and the client rendered `05/01/2026`, and React discards the server HTML for that subtree. Next.js 16, node 22, my machine is in Europe/Warsaw and the deploy region is UTC. I tried passing an explicit locale (`toLocaleDateString('en-GB')`) and the day/month order matched, but a colleague in another timezone still gets a mismatch on dates near midnight. What is the actual fix here that does not involve rendering the date only on the client?",
+    "tags": ["nextjs", "react"]
+  },
+  {
+    "id": "b1-04",
+    "title": "Next.js 16 page props type error: params does not satisfy PageProps",
+    "content": "After upgrading to Next.js 16 my dynamic route stopped type-checking.\n\n```typescript\nexport default function QuestionPage({ params }: { params: { id: string } }) {\n  return <h1>{params.id}</h1>;\n}\n```\n\n`next build` fails with: Type '{ params: { id: string; }; }' does not satisfy the constraint 'PageProps<\"/questions/[id]\">'. Types of property 'params' are incompatible. Type '{ id: string; }' is missing the following properties from type 'Promise<{ id: string; }>': then, catch, finally.\n\nThe page worked unchanged on 15. I tried widening the type to `any`, which builds but obviously kills autocomplete and feels like hiding the problem. What is the correct signature now, and does the same change apply to `searchParams` and to `generateMetadata`?",
+    "tags": ["nextjs", "typescript"]
+  },
+  {
+    "id": "b1-05",
+    "title": "sort() with a comparator returning true/false gives a wrong order",
+    "content": "I am sorting users by score and the result is only partly ordered.\n\n```javascript\nconst users = [\n  { name: 'a', score: 10 },\n  { name: 'b', score: 3 },\n  { name: 'c', score: 42 },\n  { name: 'd', score: 7 },\n];\n\nusers.sort((x, y) => x.score > y.score);\nconsole.log(users.map(u => u.score)); // [10, 3, 42, 7] in Chrome\n```\n\nI expected `[3, 7, 10, 42]`. With four items nothing moves at all; with twenty items I get something that is almost sorted but not quite, which is what made me look. The same code seemed fine in an older project, so I assumed the comparator was valid. What exactly does `sort` do with a boolean, and why does the result depend on the array length?",
+    "tags": ["javascript"]
+  },
+  {
+    "id": "b1-06",
+    "title": "Discriminated union narrowing is lost when I use a rest element",
+    "content": "This narrows fine if I access the property on the original object, but not through the rest.\n\n```typescript\ntype Result =\n  | { ok: true; data: string }\n  | { ok: false; error: string };\n\nfunction render(res: Result) {\n  const { ok, ...rest } = res;\n  if (ok) {\n    return rest.data;\n    //     ~~~~~~~~~ Property 'data' does not exist on type '{ data: string; } | { error: string; }'\n  }\n  return rest.error;\n}\n```\n\nTypeScript 5.9, strict. `const { ok, data } = res` plus a check on `ok` does narrow, so the destructuring itself is not the problem. It looks like the rest object is computed before the check and keeps both branches. Is there a way to keep the rest spread and still get narrowing, or do I have to keep the original variable around and narrow on that?",
+    "tags": ["typescript"]
+  },
+  {
+    "id": "b1-07",
+    "title": "Tailwind classes built from a template literal are missing in the production build",
+    "content": "The badge colours work in dev and are completely unstyled after `npm run build`.\n\n```javascript\nfunction Badge({ tone }) {\n  // tone is 'red' | 'green' | 'amber'\n  return <span className={`bg-${tone}-100 text-${tone}-700 px-2 py-1`}>{tone}</span>;\n}\n```\n\nIn the built CSS there is no `bg-red-100` at all, only the static `px-2 py-1`. Tailwind v4 with the Vite plugin. I tried adding the files to the source globs and restarting, no change, and I would rather not maintain a `safelist` of every colour and shade. The docs mention that class names have to appear as complete strings but I do not understand how the scanner decides what counts as one. What is the intended pattern for a variant prop like this?",
+    "tags": ["tailwindcss", "react"]
+  },
+  {
+    "id": "b1-08",
+    "title": "Tailwind v4: Cannot apply unknown utility class when using @apply in a CSS module",
+    "content": "Compilation fails as soon as I use `@apply` outside the entry stylesheet.\n\n```css\n/* Card.module.css */\n.card {\n  @apply rounded-lg border border-gray-200 p-4;\n}\n```\n\nError: Cannot apply unknown utility class `rounded-lg`. Are you using CSS modules or similar and missing `@reference`?\n\nThe exact same declarations work if I paste them into the file that has `@import \"tailwindcss\"`. Tailwind v4.1 with the PostCSS plugin, Vite 6. I tried importing `tailwindcss` at the top of the module file, which then duplicated the whole framework CSS into every module. What is the right way to reach the utility definitions from a module file without emitting them again?",
+    "tags": ["tailwindcss", "css3"]
+  },
+  {
+    "id": "b1-09",
+    "title": "position: sticky stops working when the header is inside a wrapper div",
+    "content": "The table header is sticky in a bare page and not sticky once I put the table into my layout.\n\n```css\n.table-wrapper {\n  overflow-x: auto;\n}\n\nthead th {\n  position: sticky;\n  top: 0;\n}\n```\n\nThe wrapper is there because the table is wider than the column on small screens. With the wrapper removed the header pins correctly; with it, the header scrolls away like a normal cell. No `transform` and no `overflow: hidden` anywhere on the ancestors, I checked each one in DevTools. Setting a `height` on the wrapper makes the header stick, but then the page has two scrollbars. Why does a horizontal-only overflow break vertical stickiness?",
+    "tags": ["css3"]
+  },
+  {
+    "id": "b1-10",
+    "title": "Flex child with a long token overflows instead of shrinking",
+    "content": "A comment containing a long URL pushes my whole card past the viewport and creates a horizontal scrollbar.\n\n```xml\n<div class=\"flex gap-4\">\n  <img class=\"h-10 w-10 rounded-full\" src=\"/a.png\" alt=\"\">\n  <p class=\"flex-1\">https://example.com/a/very/long/path/that/never/breaks/anywhere</p>\n</div>\n```\n\nThe `<p>` has `flex: 1 1 0%`, so I expected it to shrink and wrap. Instead the flex item stays as wide as the unbroken string. `overflow-wrap: anywhere` on the paragraph fixes the symptom, but only because the text can now break; a `<pre>` block in the same slot still blows out the row. This looks like the flex item refusing to go below its content size. What is the property that actually controls that?",
+    "tags": ["css3", "html5"]
+  },
+  {
+    "id": "b1-11",
+    "title": "Dart Sass: Undefined variable after replacing @import with @use",
+    "content": "I am migrating away from the deprecated `@import` and every partial now fails to compile.\n\n```css\n/* _variables.scss */\n$brand: #c00;\n\n/* _button.scss */\n@use '../variables';\n\n.btn { background: $brand; }\n```\n\nError: Undefined variable. `$brand` is undefined at _button.scss line 4.\n\nWith `@import '../variables'` this worked for years. Dart Sass 1.83. I read that `@use` is not transitive, so I also added the `@use` line to every partial that needs it, which I did here, and it still fails. Do I have to prefix the variable with the module name, and if so what is the rule for the default namespace?",
+    "tags": ["sass", "css3"]
+  },
+  {
+    "id": "b1-12",
+    "title": "Sass fails with Undefined operation after upgrading dart-sass",
+    "content": "A mixin that has not changed in two years no longer compiles.\n\n```css\n@mixin gutter($gap) {\n  padding: $gap / 2;\n}\n\n.row { @include gutter(16px); }\n```\n\nError: Undefined operation \"16px / 2\".\n\nDart Sass 1.83, previously 1.32 where this only printed a deprecation warning. I tried wrapping it as `($gap / 2)` and `#{$gap / 2}`; the parenthesised version still errors and the interpolated one compiles but returns the literal string `16px/2`, which the browser drops. What is the supported replacement, and does it need an extra `@use` line at the top of the file?",
+    "tags": ["sass"]
+  },
+  {
+    "id": "b1-13",
+    "title": "Bootstrap 5 modal backdrop stays on screen and blocks every click",
+    "content": "I open a confirmation modal, delete the row, and remove the modal element from the DOM. The grey backdrop stays and the page is dead.\n\n```javascript\nconst modalEl = document.querySelector('#confirm');\nconst modal = new bootstrap.Modal(modalEl);\nmodal.show();\n\ndocument.querySelector('#confirm-yes').addEventListener('click', () => {\n  row.remove();\n  modalEl.remove();\n});\n```\n\nAfter that, `.modal-backdrop` is still in the body and `<body>` keeps `overflow: hidden` and the `modal-open` class. Bootstrap 5.3.3, bundle build, no jQuery. Removing `.modal-backdrop` by hand in the console unblocks the page, so I could just do that in code, but that feels like fighting the library. What is the correct teardown order when the modal element itself has to go?",
+    "tags": ["bootstrap", "javascript"]
+  },
+  {
+    "id": "b1-14",
+    "title": "Bootstrap 5.3 data-bs-theme=dark does not affect my custom card styles",
+    "content": "I switched the app to Bootstrap 5.3's colour modes by putting `data-bs-theme=\"dark\"` on `<html>`. Every built-in component flips correctly: navbar, buttons, form controls, the table. My own `.stat-card` class stays white with dark text, so half the dashboard is unreadable. The card styles are in my own stylesheet, loaded after Bootstrap, and they set `background: #fff` and `color: #212529` because that is what I copied from the design. I tried adding a `[data-bs-theme=\"dark\"] .stat-card` override, which works, but I now have to duplicate every custom rule and the two themes drift apart every time the design changes. Bootstrap 5.3.3, no Sass build, just the CDN CSS. Is there a supported way to make my own components follow the theme the way the built-in ones do?",
+    "tags": ["bootstrap", "css3"]
+  },
+  {
+    "id": "b1-15",
+    "title": "jQuery click handler does not fire on rows added after page load",
+    "content": "The delete button works on the rows rendered by the server and does nothing on rows I append from an AJAX response.\n\n```javascript\n$('.row-delete').on('click', function () {\n  $(this).closest('tr').remove();\n});\n\n$.get('/api/rows', function (html) {\n  $('#rows').append(html);\n});\n```\n\nThe appended markup has the same `class=\"row-delete\"`, I confirmed in the inspector. jQuery 3.7.1. Re-running the binding after every append does work, but then old rows end up with the handler attached several times and one click deletes two rows. I assume the selector is evaluated once at bind time. What is the standard way to bind this so it covers future elements without stacking handlers?",
+    "tags": ["jquery", "javascript"]
+  },
+  {
+    "id": "b1-16",
+    "title": "jQuery 3.7: .success is not a function on my $.ajax call",
+    "content": "An old admin page throws `TypeError: $.ajax(...).success is not a function` on every save since we bumped jQuery from 1.12 to 3.7.1. The call is the classic chained form: `$.ajax({...}).success(fn).error(fn)`. Nothing else about the request changed, and the network tab shows the POST going out and coming back 200, so it is only the callback wiring that broke. I searched our bundle and there are about forty of these across the codebase, plus a couple of `.complete()`. I know these were deprecated at some point, but I want to be sure I replace them with the right names rather than guessing, and I would like to know whether the replacement callbacks receive the same argument order, because some of our handlers read the third argument. What is the current equivalent for each of the three?",
+    "tags": ["jquery"]
+  },
+  {
+    "id": "b1-17",
+    "title": "GLTF model renders completely black in three.js r170",
+    "content": "The model loads (I can see it in the scene graph and the bounding box is right) but every surface is pure black.\n\n```javascript\nconst scene = new THREE.Scene();\nconst renderer = new THREE.WebGLRenderer({ antialias: true });\n\nnew GLTFLoader().load('/model.glb', (gltf) => {\n  scene.add(gltf.scene);\n});\n\nrenderer.render(scene, camera);\n```\n\nThe same file looks correct in the online glTF viewer, so the asset is probably fine. If I swap the materials for `MeshBasicMaterial` the geometry shows up with its texture, which tells me the mesh and UVs are okay. The materials in the file are `MeshStandardMaterial`. There are no lights in my scene at all. Is a single `AmbientLight` enough here or does a PBR material need an environment map to look like the reference render?",
+    "tags": ["threejs", "javascript"]
+  },
+  {
+    "id": "b1-18",
+    "title": "Removing meshes from the scene does not free memory in three.js",
+    "content": "I rebuild a chart of ~5000 cubes every time the data changes and the tab climbs to 2 GB after a few minutes.\n\n```javascript\nfunction rebuild(points) {\n  scene.remove(group);\n  group = new THREE.Group();\n  for (const p of points) {\n    const geo = new THREE.BoxGeometry(1, p.value, 1);\n    const mat = new THREE.MeshStandardMaterial({ color: p.color });\n    group.add(new THREE.Mesh(geo, mat));\n  }\n  scene.add(group);\n}\n```\n\n`renderer.info.memory.geometries` goes 5000, 10000, 15000 and never drops. `scene.children.length` stays at 2, so the objects really are detached. three.js r170. I tried calling `group.clear()` before the reassignment and forcing GC in DevTools; the counter still only grows. What exactly holds on to those buffers after `remove()` and what has to be called per mesh?",
+    "tags": ["threejs"]
+  },
+  {
+    "id": "b1-19",
+    "title": "Vue 3 reactive() object loses reactivity when I destructure it",
+    "content": "The template never updates after the fetch resolves.\n\n```javascript\nimport { reactive } from 'vue';\n\nexport default {\n  setup() {\n    const state = reactive({ loading: true, items: [] });\n\n    fetch('/api/items')\n      .then(r => r.json())\n      .then(items => {\n        state.items = items;\n        state.loading = false;\n      });\n\n    const { loading, items } = state;\n    return { loading, items };\n  },\n};\n```\n\nThe network request succeeds and logging `state.items` inside `then` shows the array, but the template keeps rendering the spinner. Returning `state` itself and using `state.loading` in the template works. Vue 3.5. I get that the destructured `loading` is just a boolean copy, but `items` is an array, so I expected at least that one to stay linked. Why does neither work, and what is the supported way to expose individual fields?",
+    "tags": ["vuejs", "javascript"]
+  },
+  {
+    "id": "b1-20",
+    "title": "watch() on a destructured prop never fires in Vue 3.5 script setup",
+    "content": "I destructure props for readability and my watcher stopped running.\n\n```typescript\nconst { userId } = defineProps<{ userId: string }>();\n\nwatch(userId, (id) => {\n  load(id);\n});\n```\n\nAt runtime I get: [Vue warn] Invalid watch source: undefined. A watch source can only be a getter/effect function, a ref, a reactive object, or an array of these types.\n\nWith `const props = defineProps<...>()` and `watch(() => props.userId, ...)` everything is fine. Vue 3.5.13, TypeScript 5.8. The release notes say destructured props stay reactive now, and interpolating `userId` in the template does update, so it clearly is reactive in some sense. Why does `watch` not accept it and what is the correct source expression when I want to keep the destructuring?",
+    "tags": ["vuejs", "typescript"]
+  },
+  {
+    "id": "b1-21",
+    "title": "Angular 19 standalone: NG0304 app-user-card is not a known element",
+    "content": "The child component exists and is exported, but the parent template refuses to render it.\n\n```typescript\n@Component({\n  selector: 'app-user-list',\n  template: `<app-user-card *ngFor=\"let u of users\" [user]=\"u\"></app-user-card>`,\n})\nexport class UserListComponent {\n  users = [];\n}\n```\n\nNG0304: 'app-user-card' is not a known element. 1. If 'app-user-card' is an Angular component, then verify that it is included in the '@Component.imports' of this component.\n\nAngular 19, everything standalone, no NgModules in the project. `UserCardComponent` is declared with `standalone: true` (the default now) and I import the file at the top, but the import is only used by the type annotation. I also get a second error about `*ngFor` on the same template. Do both of those come from the same missing piece?",
+    "tags": ["angular", "typescript"]
+  },
+  {
+    "id": "b1-22",
+    "title": "NG0100 ExpressionChangedAfterItHasBeenCheckedError from a template getter",
+    "content": "My form component throws NG0100 in dev mode: Expression has changed after it was checked. Previous value for 'disabled': 'false'. Current value: 'true'. The binding is `[disabled]=\"isBusy\"` on the submit button, and `isBusy` is a getter that returns `this.form.pending || this.saving`. It only happens when the async validator on the email field is still running at the moment the view is first checked, so it is not reproducible on every load, and production builds do not throw because the second check is skipped. Angular 19, default change detection, no OnPush anywhere in this component tree. Wrapping the state update in `setTimeout` makes the error go away, which I understand pushes it to the next tick, but I would like to know why the getter produces a different value inside the same cycle and what the recommended fix is when the value genuinely depends on form status.",
+    "tags": ["angular"]
+  },
+  {
+    "id": "b1-23",
+    "title": "Destructuring a $state object in Svelte 5 breaks reactivity",
+    "content": "The count in the template never changes although the handler clearly runs.\n\n```javascript\nlet store = $state({ count: 0, label: 'clicks' });\n\nlet { count, label } = store;\n\nfunction inc() {\n  store.count += 1;\n  console.log(store.count); // 1, 2, 3 ...\n}\n```\n\nThe template renders `{count}` and stays at 0 forever, while the log shows the value going up. Svelte 5.20, runes mode, no legacy `export let` in this file. If I render `{store.count}` instead it updates immediately. I assumed `$state` made the whole object reactive so any binding derived from it would follow. Is destructuring taking a snapshot of the proxy, and what should I use when I want short names in the template?",
+    "tags": ["svelte", "javascript"]
+  },
+  {
+    "id": "b1-24",
+    "title": "Svelte 5 build fails on on:click and the |preventDefault modifier",
+    "content": "After running the Svelte 5 migration on a mid-size app most components compile, but a handful of forms fail the build with: `Event modifiers are not supported in runes mode` and, on other lines, a deprecation error about `on:click` no longer being valid element event syntax. The offending markup is the usual `<form on:submit|preventDefault={save}>` and `<button on:click|once={openOnce}>`. I know the plain `on:click` to `onclick` rename, and the codemod did most of those, but it left every line that carries a modifier untouched, which suggests there is no mechanical equivalent. Svelte 5.20, SvelteKit 2. What is the intended replacement for `preventDefault`, `stopPropagation` and `once` now, and is there still a way to get the `once` behaviour without tracking a boolean by hand?",
+    "tags": ["svelte"]
+  },
+  {
+    "id": "b1-25",
+    "title": "dialog closes on submit but returnValue is always an empty string",
+    "content": "I need to know which button closed the dialog and `returnValue` never carries it.\n\n```xml\n<dialog id=\"confirm\">\n  <form method=\"dialog\">\n    <button value=\"cancel\">Cancel</button>\n    <button value=\"delete\">Delete</button>\n  </form>\n</dialog>\n```\n\n```javascript\nconfirmEl.addEventListener('close', () => {\n  console.log(confirmEl.returnValue); // '' every time\n});\n```\n\nThe dialog does close on either button, so the `method=\"dialog\"` part is working. Chrome 133 and Firefox 135 behave the same. The buttons are inside the form and both have a `value`. What I eventually noticed is that our design system component renders them with `type=\"button\"`. Is that the reason the submitter is never recorded, and is `returnValue` the right thing to read at all, or should I be listening for something else?",
+    "tags": ["html5", "javascript"]
+  },
+  {
+    "id": "b1-26",
+    "title": "Date from an input type=date is one day earlier than what the user picked",
+    "content": "A user picks 2026-03-01 and the row saves as 28 February.\n\n```javascript\nconst input = document.querySelector('#due');\ninput.addEventListener('change', () => {\n  const d = new Date(input.value); // '2026-03-01'\n  console.log(d.toString());\n  // Sun Feb 28 2026 ... GMT-0500 (Eastern Standard Time)\n  save({ due: d.getDate() });      // 28\n});\n```\n\nOn my machine (UTC+1) it looks correct, which is why it took a week to notice. I understand something timezone-related is happening between the string and the local date, but I do not see where the shift is introduced, since the input value has no time or offset in it at all. I tried appending `T00:00:00` and the number is right, but I want to know why that changes anything before I ship it. Is there a parsing rule that treats the bare date form differently?",
+    "tags": ["html5", "javascript"]
+  },
+  {
+    "id": "b1-27",
+    "title": "Deleting a row from a list with index keys keeps the wrong input values",
+    "content": "I render editable rows and remove the middle one; the inputs below shift their text up by one.\n\n```javascript\n{rows.map((row, i) => (\n  <li key={i}>\n    <input defaultValue={row.label} />\n    <button onClick={() => remove(row.id)}>x</button>\n  </li>\n))}\n```\n\nWith rows A, B, C, deleting B leaves two rows whose inputs read A and B, while the state array is correctly [A, C]. React 19.2. Switching `defaultValue` to `value` plus an onChange handler fixes the display, but I would rather understand the cause than change the control mode, because the same list also has an uncontrolled file input that has the same issue. I suspect it is the key. Why does the index key make React reuse the wrong DOM node?",
+    "tags": ["react", "javascript"]
+  },
+  {
+    "id": "b1-28",
+    "title": "React 19 + TS: Property 'ref' does not exist on type IntrinsicAttributes & Props",
+    "content": "After the upgrade, passing a ref to my own component no longer type-checks.\n\n```typescript\ntype Props = { label: string };\n\nfunction TextField({ label }: Props) {\n  return <input aria-label={label} />;\n}\n\n// call site\nconst ref = useRef<HTMLInputElement>(null);\n<TextField ref={ref} label=\"Email\" />;\n// Property 'ref' does not exist on type 'IntrinsicAttributes & Props'.\n```\n\nReact 19.2, @types/react 19. I read that `forwardRef` is no longer needed because `ref` is a regular prop, and the runtime does work if I ignore the error with a cast. So the mechanism is there and only the types are missing something. What do I have to add to `Props`, and where does the ref have to be forwarded to inside the component for it to land on the actual `<input>`?",
+    "tags": ["react", "typescript"]
+  },
+  {
+    "id": "b1-29",
+    "title": "Only plain objects can be passed to Client Components — but I pass a Date",
+    "content": "A server component loads a row and hands it to a client child.\n\n```javascript\n// page.tsx (server)\nconst question = await db.question.findFirst({ where: { id } });\nreturn <QuestionCard question={question} />;\n\n// question-card.tsx\n'use client';\nexport function QuestionCard({ question }) {\n  return <time>{question.createdAt.toISOString()}</time>;\n}\n```\n\nWarning: Only plain objects can be passed to Client Components from Server Components. Class instances are not supported.\n\nNext.js 16. `createdAt` is a `Date`, and the row also has a `Decimal` column from the ORM. The page still renders, which confused me at first, but the warning is constant and `toISOString` throws in production. I do not want to serialise the whole row by hand in every page. Is there a rule for which types survive the boundary, and where is the right place to convert?",
+    "tags": ["nextjs", "react"]
+  },
+  {
+    "id": "b1-30",
+    "title": "Build fails: useSearchParams() should be wrapped in a suspense boundary",
+    "content": "`next dev` is perfectly happy and `next build` refuses to finish. The error is: useSearchParams() should be wrapped in a suspense boundary at page \"/search\". The component reading the params is a small client component that renders the active filter chips, and it is imported into the page like any other component. I tried marking the page itself with `export const dynamic = 'force-dynamic'`, which does make the build pass, but that opts the entire route out of static rendering, and the rest of the page is static content I would like prerendered. Next.js 16, App Router. I do not fully understand what the boundary is protecting against during prerender, or how big it should be — does it go around just the chips component, or around everything that could read from the URL?",
+    "tags": ["nextjs"]
+  },
+  {
+    "id": "b1-31",
+    "title": "ERR_REQUIRE_ESM after updating a dependency in my CommonJS build script",
+    "content": "One of our build scripts started failing after a routine dependency bump. The error is: Error [ERR_REQUIRE_ESM]: require() of ES Module /app/node_modules/chalk/source/index.js from /app/scripts/report.js not supported. Instead change the require of index.js to a dynamic import() which is available in all CommonJS modules. The script is a plain `.js` file using `require`, the package has no `\"type\"` field, and the dependency's changelog says it is now ESM-only. Node 22. I tried adding `\"type\": \"module\"` to package.json, which fixed this script and broke four others that use `__dirname` and `module.exports`. Pinning the old version works for now but is obviously temporary. What is the smallest correct change for a single CommonJS script that needs one ESM-only package, and does dynamic import inside a synchronous function actually help?",
+    "tags": ["javascript", "nodejs"]
+  },
+  {
+    "id": "b1-32",
+    "title": "Type instantiation is excessively deep and possibly infinite on a path type",
+    "content": "I wrote a helper that produces dotted paths of an object type and it explodes on our config type.\n\n```typescript\ntype Path<T> = T extends object\n  ? { [K in keyof T & string]: K | `${K}.${Path<T[K]>}` }[keyof T & string]\n  : never;\n\ntype ConfigPath = Path<AppConfig>;\n// error ts(2589): Type instantiation is excessively deep and possibly infinite.\n```\n\nIt works on small types; `AppConfig` is about six levels deep with a couple of arrays. TypeScript 5.9. Adding a depth counter as a second parameter helps, but I had to cap it at 4 and now the deepest keys are missing. Is there a way to write this so it terminates for arbitrary depth, or is the recursion limit a hard wall that means I should generate the union from the runtime schema instead?",
+    "tags": ["typescript"]
+  },
+  {
+    "id": "b1-33",
+    "title": "toFixed(2) rounds 1.005 down to 1.00 and my invoice totals are off by a cent",
+    "content": "Accounting flagged a report where one line is a cent short.\n\n```javascript\n(1.005).toFixed(2);        // '1.00'\n(1.015).toFixed(2);        // '1.02'\n(0.1 + 0.2).toFixed(2);    // '0.30'\nMath.round(1.005 * 100) / 100; // 1\n```\n\nI expected `1.01` from the first one, and the inconsistency with 1.015 is what makes it hard to explain to anyone. I know the general answer is binary floating point, but I need to decide what to actually do. The amounts come from an API as numbers with two decimals. Is the correct fix to move everything to integer cents at the boundary, or is there a rounding helper in Intl that gives the half-up behaviour the finance team expects?",
+    "tags": ["javascript"]
+  },
+  {
+    "id": "b1-34",
+    "title": "act(...) warning in React Testing Library after an awaited fetch",
+    "content": "The assertion passes and the test still prints a warning that fails our CI on strict mode.\n\n```javascript\ntest('shows the user name', async () => {\n  render(<Profile id=\"1\" />);\n  expect(await screen.findByText('Ada')).toBeInTheDocument();\n});\n```\n\nWarning: An update to Profile inside a test was not wrapped in act(...).\n\nThe component fetches in an effect and calls `setUser` when it resolves; the fetch is mocked to resolve immediately. React 19.2, @testing-library/react 16, Jest 29 with jsdom. `findByText` already wraps in `asyncWrapper`, which is why I expected no warning at all. Wrapping the render in `await act(async () => {...})` removes it, but then I have two nested acts and the intent is unclear. Which update is escaping the wrapper here?",
+    "tags": ["react", "javascript", "jest"]
+  },
+  {
+    "id": "b1-35",
+    "title": "removeEventListener in the useEffect cleanup does not remove my scroll handler",
+    "content": "Navigating away from the page leaves the handler running and it throws on unmounted state.\n\n```javascript\nuseEffect(() => {\n  function handleScroll() {\n    setOffset(window.scrollY);\n  }\n  window.addEventListener('scroll', handleScroll);\n  return () => window.removeEventListener('scroll', () => handleScroll());\n}, []);\n```\n\nAfter a few route changes I can see six scroll listeners in the DevTools event listeners panel and the page gets visibly janky. The cleanup definitely runs, I logged it. React 19.2 with the router doing client-side navigation. I thought passing the same named function was enough. Is the arrow wrapper in the cleanup the problem, and if so why does `removeEventListener` fail silently instead of telling me the listener was not found?",
+    "tags": ["react", "javascript"]
+  },
+  {
+    "id": "b1-36",
+    "title": "Tailwind v4: the dark: variant never applies with a class on html",
+    "content": "I toggle a class on the root element and no `dark:` utility takes effect.\n\n```css\n@import \"tailwindcss\";\n```\n\n```javascript\ndocument.documentElement.classList.toggle('dark', isDark);\n```\n\n`<html class=\"dark\">` is there in the inspector, and `dark:bg-gray-900` is present in the generated CSS — but wrapped in `@media (prefers-color-scheme: dark)`, so it only fires when the OS is dark. Tailwind v4.1. In v3 I set `darkMode: 'class'` in the config, and v4 has no config file in this project. I tried adding the old config back and it is ignored. How do I redefine the `dark` variant so it keys off the class instead of the media query?",
+    "tags": ["tailwindcss", "nextjs"]
+  },
+  {
+    "id": "b1-37",
+    "title": "Dynamic import with a variable path pulls the whole folder into the bundle",
+    "content": "I load locale files on demand and the main chunk grew by 400 kB.\n\n```javascript\nasync function loadLocale(code) {\n  const mod = await import(`./locales/${code}.json`);\n  return mod.default;\n}\n```\n\nThe build output lists 47 separate chunks, one per file in `locales/`, and the analyzer shows they are all reachable from the entry. Webpack 5. I expected one chunk to be fetched at runtime for the single locale a user needs. If I hardcode `import('./locales/en.json')` I get exactly one chunk as expected, so it is the interpolation. I can build an explicit map of arrow functions, which works but is 47 lines I have to keep in sync. Is there a way to keep the template literal and narrow what gets included?",
+    "tags": ["javascript", "webpack"]
+  },
+  {
+    "id": "b1-38",
+    "title": "Vite build fails: 'Props' is a type and must be imported using a type-only import",
+    "content": "Dev server runs fine, `vite build` fails on files that import types the normal way.\n\n```typescript\nimport { Props, formatLabel } from './helpers';\n\nexport function Chip({ label }: Props) {\n  return <span>{formatLabel(label)}</span>;\n}\n```\n\nError: 'Props' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.\n\nVite 6, TypeScript 5.9. `verbatimModuleSyntax` came in with the template's tsconfig and I do not want to turn it off without knowing what it protects. Splitting into `import type { Props }` plus a value import fixes each file, but there are around 200. Is the inline `import { type Props, formatLabel }` form equivalent here, and is there a codemod-safe rule I can turn on in eslint so this does not come back?",
+    "tags": ["typescript", "vite"]
+  },
+  {
+    "id": "b1-39",
+    "title": "Every context consumer re-renders because the value is a new object each render",
+    "content": "Typing in the search box re-renders the whole page including a 500-row table that does not use the query at all.\n\n```javascript\nexport function AppProvider({ children }) {\n  const [query, setQuery] = useState('');\n  const [user, setUser] = useState(null);\n\n  return (\n    <AppContext.Provider value={{ query, setQuery, user, setUser }}>\n      {children}\n    </AppContext.Provider>\n  );\n}\n```\n\nThe table consumer only reads `user`, but the profiler shows it re-rendering on every keystroke. React 19.2. I wrapped the table in `memo`, which changed nothing, and I now understand that memo does not stop a context update from propagating. Wrapping the value in `useMemo` on `[query, user]` still re-renders it whenever `query` changes. Is splitting into two contexts the only real answer here, or is there a way to subscribe to one field?",
+    "tags": ["react", "javascript"]
+  },
+  {
+    "id": "b1-40",
+    "title": "Angular OnPush component does not update when data arrives from a subscription",
+    "content": "The template shows the empty state forever even though the data is there.\n\n```typescript\n@Component({\n  selector: 'app-orders',\n  changeDetection: ChangeDetectionStrategy.OnPush,\n  template: `<p *ngIf=\"!orders.length\">No orders</p>`,\n})\nexport class OrdersComponent implements OnInit {\n  orders: Order[] = [];\n\n  ngOnInit() {\n    this.socket.orders$.subscribe(list => {\n      this.orders = list;\n      console.log('got', list.length); // logs 12\n    });\n  }\n}\n```\n\nAngular 19. It works if I remove `OnPush`, and it also works if I inject `ChangeDetectorRef` and call `markForCheck()` in the subscribe. The stream comes from a raw WebSocket wrapped in a Subject, not from HttpClient. I would like to know why the assignment does not schedule a check under OnPush when an HTTP response in the same component does, and whether the async pipe would remove the need for the manual call.",
+    "tags": ["angular", "rxjs"]
+  },
+  {
+    "id": "b1-41",
+    "title": "Vue Router beforeEach guard causes an infinite redirect loop on /login",
+    "content": "Opening any protected page freezes the tab and the console fills with router warnings.\n\n```javascript\nrouter.beforeEach((to, from, next) => {\n  if (!store.isAuthenticated) {\n    next('/login');\n  } else {\n    next();\n  }\n});\n```\n\nThe warning is: Detected an infinite redirection in a navigation guard when going from \"/dashboard\" to \"/login\". Aborting to avoid a Stack Overflow.\n\nVue 3.5, vue-router 4.5. It is obvious in hindsight that `/login` itself hits the guard and gets redirected to `/login` again, but I am not sure what the clean fix is. Checking `to.path !== '/login'` works until we add a second public route. Is a per-route meta flag the intended pattern here, and does returning a location instead of calling `next` behave differently?",
+    "tags": ["vuejs"]
+  },
+  {
+    "id": "b1-42",
+    "title": "SvelteKit load does not re-run when only the route param changes",
+    "content": "Navigating from /questions/1 to /questions/2 keeps showing question 1.\n\n```javascript\n// +page.server.js\nexport async function load({ fetch, url }) {\n  const id = url.pathname.split('/').pop();\n  const res = await fetch(`/api/questions/${id}`);\n  return { question: await res.json() };\n}\n```\n\nA full page reload shows the right question, so the endpoint is fine. SvelteKit 2.15. I read that load re-runs when a dependency changes, and it looks like reading the id out of `url.pathname` is not registering as a dependency on `params`. Using `params.id` directly does fix it. I would still like to understand the tracking rule, because I have another load that reads `url.searchParams` and I cannot tell whether that one is safe.",
+    "tags": ["svelte"]
+  },
+  {
+    "id": "b1-43",
+    "title": "Custom checkbox with appearance: none is invisible when focused by keyboard",
+    "content": "Our design system replaces the native checkbox look with `appearance: none` plus a border and a background image for the tick. It looks right and it is still a real `<input type=\"checkbox\">`, so screen readers announce it correctly. The problem came out of an audit: tabbing through the form, there is no visible indication of which checkbox is focused, because the reset also removed the default focus ring and our stylesheet has a global `*:focus { outline: none }` that predates me. Adding `outline` back on `:focus` gives a ring on mouse clicks too, which the designer rejected. I tried a `box-shadow` on `:focus` which is visible but disappears in Windows high contrast mode, and that came up in the same audit. What is the current recommended combination here so keyboard users get a ring, mouse users do not, and forced-colors mode still shows something?",
+    "tags": ["css3", "html5"]
+  },
+  {
+    "id": "b1-44",
+    "title": "aria-live region is not announced when React replaces the whole node",
+    "content": "The toast is announced the first time and silent for every message after it.\n\n```javascript\nfunction Toast({ message }) {\n  if (!message) return null;\n  return <div role=\"status\" aria-live=\"polite\">{message}</div>;\n}\n```\n\nTested with VoiceOver on Safari 18 and NVDA on Firefox 135; both read the first toast and nothing afterwards. React 19.2. The DOM inspector shows the div being removed and a new one inserted with the next message, which I think is the problem: the live region is created at the same moment as its content instead of existing beforehand. Rendering the wrapper always and only swapping the text inside makes NVDA announce every message, but VoiceOver still skips some. Is there a rule about how long the region must exist before the update?",
+    "tags": ["react", "html5"]
+  },
+  {
+    "id": "b1-45",
+    "title": "Grid column with 1fr overflows when the cell contains a long code block",
+    "content": "The layout is a two-column grid, sidebar plus content, declared as `grid-template-columns: 260px 1fr`. Everything is fine until a post contains a wide `<pre>` block: instead of the code block getting its own horizontal scrollbar, the whole content column grows to the width of the longest line and the page scrolls sideways, pushing the sidebar off screen. The `<pre>` has `overflow-x: auto` on it, which I expected to be enough, and it does work if I give the column a fixed pixel width instead of `1fr`. So the grid item is somehow sizing itself to its content rather than to the track. I have seen `minmax(0, 1fr)` recommended for this and it does fix it, but I do not understand what the implicit minimum is or why `1fr` alone is not the same thing.",
+    "tags": ["css3"]
+  },
+  {
+    "id": "b1-46",
+    "title": "Safari returns Invalid Date for new Date('2026-01-05 10:00') but Chrome parses it",
+    "content": "Reports render fine everywhere except on iPhones, where every timestamp shows as NaN.\n\n```javascript\nconst raw = '2026-01-05 10:00:00'; // straight from the API\nconst d = new Date(raw);\nconsole.log(d.getTime());\n// Chrome 133: 1767607200000\n// Safari 18:  NaN\n```\n\nThe API is a Python service returning `str(datetime)` with a space between the date and the time. I assumed date parsing was standardised. Replacing the space with `T` makes Safari parse it, but then the value is treated as local time in one browser and I am not sure it is consistent. Which formats is `Date` actually required to accept, and is the fix on my side or should the API emit ISO-8601 with an offset?",
+    "tags": ["javascript"]
+  },
+  {
+    "id": "b1-47",
+    "title": "100vh hero section is taller than the viewport on iOS Safari",
+    "content": "The landing hero is `height: 100vh` with a button pinned to the bottom edge. On desktop and on Android Chrome it fits exactly. On iOS Safari the button is under the browser's bottom toolbar when the page first loads, and it only becomes visible after you scroll and the toolbar collapses, which is precisely when the section is no longer the thing you are looking at. I measured `window.innerHeight` on the device and it is smaller than the value the section is getting, so `100vh` is clearly resolving against the larger, toolbar-free viewport. The usual JS workaround of writing `innerHeight` into a custom property works but reflows on every scroll and feels dated. iOS 18. Is there a viewport unit that tracks the visible area now, and what is a sane fallback for browsers that do not have it?",
+    "tags": ["css3"]
+  },
+  {
+    "id": "b1-48",
+    "title": "Third-party chat widget loads twice and shows two launchers in Next.js",
+    "content": "We embed a support chat widget by dropping its script tag into the root layout. In production most users see one launcher bubble, but anyone who navigates client-side between two pages ends up with two, and on a hard refresh of certain routes there are briefly two before one disappears. The vendor's snippet is a plain `<script>` that appends a div to `document.body` and has no idempotency check of its own, so I assume it is running more than once. Next.js 16, App Router, the tag sits directly in the layout's JSX. I tried moving it into a client component with a `useEffect` that appends the script node, which fixed the duplicate on navigation but reintroduced it under StrictMode in dev. I would like to know what the framework offers for exactly-once third-party scripts and whether the layout is even the right place for it.",
+    "tags": ["nextjs", "javascript"]
+  },
+  {
+    "id": "b1-49",
+    "title": "Caret jumps to the end of the input while formatting a phone number as I type",
+    "content": "The formatting works, editing in the middle does not.\n\n```javascript\nfunction PhoneInput() {\n  const [value, setValue] = useState('');\n\n  function onChange(e) {\n    const digits = e.target.value.replace(/\\D/g, '').slice(0, 9);\n    const formatted = digits.replace(/(\\d{3})(?=\\d)/g, '$1 ');\n    setValue(formatted);\n  }\n\n  return <input value={value} onChange={onChange} inputMode=\"tel\" />;\n}\n```\n\nIf the field holds `123 456 789` and I click between the 1 and the 2 to fix a typo, the character lands there for a moment and then the caret snaps to the end, so the next keystroke goes to the wrong place. React 19.2, Chrome 133. I understand the value is being replaced wholesale on each render, which resets the selection. What is the correct way to restore the caret when the inserted separators shift the offset?",
+    "tags": ["react", "javascript"]
+  },
+  {
+    "id": "b1-50",
+    "title": "Object.groupBy is not a function at runtime although TypeScript compiles it",
+    "content": "The build is green and the deployed job crashes on the first call.\n\n```typescript\nconst byTag = Object.groupBy(questions, (q) => q.tag);\n// TypeError: Object.groupBy is not a function\n```\n\nTypeScript 5.9 accepts it because `lib` is set to `[\"ES2024\", \"DOM\"]` in tsconfig, and my local Node is 22 where it works. The container image is `node:20-alpine`, and on Node 20 the method does not exist. So the type layer and the runtime disagree and nothing warned me. I can hand-roll a `reduce` in three lines and probably will, but I would like to stop this class of bug in general: is there a way to make the compiler reject APIs the target runtime does not have, short of guessing the right `lib` value by hand?",
+    "tags": ["javascript", "typescript", "nodejs"]
+  }
+]

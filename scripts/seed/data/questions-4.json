@@ -1,0 +1,428 @@
+[
+  {
+    "id": "b4-01",
+    "title": "Docker rebuilds npm install on every build even when only src files changed",
+    "content": "I am building a Node service with Docker 27 and every `docker build` reinstalls all dependencies, even when I only edited a file under `src/`.\n\n```bash\nFROM node:22-alpine\nWORKDIR /app\nCOPY . .\nRUN npm ci\nCMD [\"node\", \"src/index.js\"]\n```\n\nOutput on the second build:\n\n```bash\n => [3/4] COPY . .                        0.1s\n => [4/4] RUN npm ci                     41.3s\n```\n\nI expected step 4 to come from cache. I already confirmed BuildKit is enabled and that `node_modules` is in `.dockerignore`. Why is the layer invalidated when `package.json` did not change?",
+    "tags": [
+      "docker",
+      "nodejs"
+    ]
+  },
+  {
+    "id": "b4-02",
+    "title": "Multi-stage build still produces a 1.2 GB image even though the final stage is alpine",
+    "content": "I converted a Go build to multi-stage on Docker 27 to shrink the image, but `docker images` still reports 1.2 GB.\n\n```bash\nFROM golang:1.23 AS build\nWORKDIR /src\nCOPY . .\nRUN go build -o /app/server ./cmd/server\n\nFROM golang:1.23\nCOPY --from=build /app/server /usr/local/bin/server\nENTRYPOINT [\"server\"]\n```\n\n`docker history` shows the base layers dominating. I assumed the builder stage was discarded automatically, and it is — the reported size is entirely the final stage. What is the correct final base for a statically linked Go binary, and what do I need to change in the build command so it actually runs there?",
+    "tags": [
+      "docker"
+    ]
+  },
+  {
+    "id": "b4-03",
+    "title": "Container cannot reach host Postgres on 127.0.0.1:5432, connection refused",
+    "content": "My app runs fine on the host but inside a container it cannot connect to Postgres running on the same machine (Ubuntu 24.04, Docker 27).\n\n```bash\n$ docker run --rm myapp\nError: connect ECONNREFUSED 127.0.0.1:5432\n```\n\nThe connection string is `postgres://app@127.0.0.1:5432/app`. Postgres listens on `0.0.0.0:5432` on the host (confirmed with `ss -tlnp`). `docker run --rm alpine ping -c1 172.17.0.1` works. I understand `127.0.0.1` inside the container is the container itself, but I want a connection string that works both on the host and inside a container without editing it per environment. What is the standard way to do this?",
+    "tags": [
+      "docker",
+      "linux",
+      "postgresql"
+    ]
+  },
+  {
+    "id": "b4-04",
+    "title": "Files written by a container into a bind mount are owned by root on the host",
+    "content": "I mount my project directory into a container so the build output lands on the host, but everything the container writes is owned by `root` and I have to `sudo rm` it.\n\n```bash\n$ docker run --rm -v \"$PWD:/app\" -w /app node:22 npm run build\n$ ls -l dist/\n-rw-r--r-- 1 root root 812313 Sep  2 11:02 main.js\n```\n\nHost is Ubuntu 24.04, Docker 27, my user is uid 1000. I tried adding `USER node` to the Dockerfile, which fixes ownership but then the container cannot write into `/app` at all because the directory is owned by 1000 and `node` is uid 1000 in that image... except in the `python:3.12` image where there is no matching user. What is the general fix that does not depend on the base image having a user with my uid?",
+    "tags": [
+      "docker",
+      "linux"
+    ]
+  },
+  {
+    "id": "b4-05",
+    "title": "docker compose service resolves the wrong container after a scale, requests hit one replica",
+    "content": "With Docker Compose v2 I scaled a worker-facing API and expected round-robin DNS between replicas.\n\n```bash\nservices:\n  api:\n    image: myapi\n    deploy:\n      replicas: 3\n  client:\n    image: myclient\n    environment:\n      API_URL: http://api:8080\n```\n\nAll requests from `client` land on the same replica. From inside `client`, `getent hosts api` returns three A records, but the Node HTTP agent keeps the first one. I already ruled out keep-alive by setting `agent: false`. Is Compose DNS supposed to rotate the record order per lookup, and if it does, what in the client is defeating it?",
+    "tags": [
+      "docker",
+      "nodejs"
+    ]
+  },
+  {
+    "id": "b4-06",
+    "title": "Pod killed with exit code 137 although the node reports plenty of free memory",
+    "content": "On Kubernetes 1.31 a pod restarts every few minutes.\n\n```bash\n$ kubectl get pod api-7d8f -o jsonpath='{.status.containerStatuses[0].lastState.terminated}'\n{\"exitCode\":137,\"reason\":\"OOMKilled\",\"startedAt\":\"...\"}\n$ kubectl top node node-3\nNAME     CPU    MEMORY\nnode-3   1200m  3100Mi/16000Mi\n```\n\nThe container has `resources.limits.memory: 256Mi`. The node clearly has memory free. I read that 137 means SIGKILL and assumed the node was under pressure, but `kubectl describe node` shows no `MemoryPressure` condition. Is the limit itself the killer here, and how do I confirm which cgroup triggered it?",
+    "tags": [
+      "kubernetes"
+    ]
+  },
+  {
+    "id": "b4-07",
+    "title": "Readiness probe fails with connection refused during startup but the app needs 60s to boot",
+    "content": "A JVM service on Kubernetes 1.31 never becomes ready; it gets killed and restarted in a loop.\n\n```bash\nlivenessProbe:\n  httpGet:\n    path: /health\n    port: 8080\n  initialDelaySeconds: 10\n  periodSeconds: 5\n  failureThreshold: 3\n```\n\nEvents:\n\n```bash\nLiveness probe failed: Get \"http://10.1.2.7:8080/health\": dial tcp 10.1.2.7:8080: connect: connection refused\nContainer app failed liveness probe, will be restarted\n```\n\nThe app genuinely takes about 60 seconds to open the port. I can raise `initialDelaySeconds` to 90, but then a real hang later takes 90 seconds to detect. Is there a probe type meant for slow startup that keeps liveness aggressive afterwards?",
+    "tags": [
+      "kubernetes"
+    ]
+  },
+  {
+    "id": "b4-08",
+    "title": "ConfigMap change does not reach the pod, env var keeps the old value",
+    "content": "I updated a ConfigMap on Kubernetes 1.31 and the running pods still serve the old value.\n\n```bash\n$ kubectl get cm app-config -o jsonpath='{.data.LOG_LEVEL}'\ndebug\n$ kubectl exec deploy/app -- printenv LOG_LEVEL\ninfo\n```\n\nThe deployment consumes it as:\n\n```bash\nenvFrom:\n  - configMapRef:\n      name: app-config\n```\n\nI waited ten minutes. `kubectl rollout restart deploy/app` fixes it. I would rather not restart manually on every config change — is there a consumption method that picks up updates in place, and what are its limits?",
+    "tags": [
+      "kubernetes"
+    ]
+  },
+  {
+    "id": "b4-09",
+    "title": "Service has endpoints but curl from another pod times out after 30 seconds",
+    "content": "On Kubernetes 1.31 a ClusterIP service is unreachable from other pods, yet it has endpoints.\n\n```bash\n$ kubectl get endpointslice -l kubernetes.io/service-name=payments\nNAME             ADDRESSTYPE   PORTS   ENDPOINTS\npayments-abc12   IPv4          8443    10.1.4.9\n$ kubectl exec -it debug -- curl -m 5 http://payments:8080/health\ncurl: (28) Connection timed out after 5001 milliseconds\n```\n\nService spec:\n\n```bash\nspec:\n  selector:\n    app: payments\n  ports:\n    - port: 8080\n      targetPort: 8443\n```\n\nThe container itself listens on 8080, not 8443. I suspect that is the bug, but I want to understand why the endpoint was still created and listed as healthy — does the control plane not verify targetPort against the container?",
+    "tags": [
+      "kubernetes"
+    ]
+  },
+  {
+    "id": "b4-10",
+    "title": "Ingress returns 404 for every path although the backend service works via port-forward",
+    "content": "Kubernetes 1.31 with ingress-nginx. Requests to the host return 404 from nginx, not from my app.\n\n```bash\napiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: web\n  namespace: staging\nspec:\n  ingressClassName: nginx\n  rules:\n    - host: app.example.com\n      http:\n        paths:\n          - path: /\n            pathType: Prefix\n            backend:\n              service:\n                name: web\n                port:\n                  number: 80\n```\n\n`kubectl port-forward svc/web 8080:80` serves the app fine. The ingress controller runs in `ingress-nginx` namespace; the service `web` is in `staging`. Controller logs show the request matched the default backend. What makes a rule silently not bind?",
+    "tags": [
+      "kubernetes",
+      "nginx"
+    ]
+  },
+  {
+    "id": "b4-11",
+    "title": "AKS pod stuck in ImagePullBackOff with 401 Unauthorized pulling from ACR",
+    "content": "An AKS cluster (Kubernetes 1.31) cannot pull an image from the Azure Container Registry in the same subscription.\n\n```bash\n$ kubectl describe pod api-6f9c\nFailed to pull image \"myreg.azurecr.io/api:1.4.0\": failed to authorize: \nunauthorized: authentication required, visit https://aka.ms/acr/authorization\n  Warning  Failed  ImagePullBackOff\n```\n\nFrom my laptop `az acr login -n myreg` then `docker pull myreg.azurecr.io/api:1.4.0` succeeds, so the tag exists. There is no `imagePullSecrets` in the deployment because I expected the cluster identity to cover it. Which identity does the kubelet actually use for a pull, and what is the supported way to grant it without putting a registry password in a secret?",
+    "tags": [
+      "azure",
+      "kubernetes",
+      "docker"
+    ]
+  },
+  {
+    "id": "b4-12",
+    "title": "git rebase drops my commits, git log shows them gone after a conflict resolution",
+    "content": "Git 2.47. During `git rebase main` I hit conflicts, fixed the files, and ran `git rebase --continue`. Two of my five commits are no longer in the history.\n\n```bash\n$ git log --oneline main..HEAD\na91f22c fix parser edge case\n3b0dd41 add parser tests\n```\n\nI had five. `git reflog` shows entries like:\n\n```bash\n4c1a9de HEAD@{7}: rebase (skip): fast-forward\n```\n\nI think I typed `git rebase --skip` when the resolved tree ended up empty. Are those commits recoverable from the reflog, and what should I have done instead when a resolved commit produces no diff?",
+    "tags": [
+      "git"
+    ]
+  },
+  {
+    "id": "b4-13",
+    "title": "fatal: refusing to merge unrelated histories when pulling into a fresh local repo",
+    "content": "I ran `git init`, committed a README, then added the remote and pulled. Git 2.47.\n\n```bash\n$ git pull origin main\nfatal: refusing to merge unrelated histories\n```\n\nThe remote already had a full history. `git log origin/main` shows it fetched fine. I know `--allow-unrelated-histories` makes the error go away, but I would end up with two root commits and a merge that mixes two unrelated trees. Given my only local commit is a README I do not need, what is the clean way out?",
+    "tags": [
+      "git"
+    ]
+  },
+  {
+    "id": "b4-14",
+    "title": "git submodule update leaves the submodule at an old commit after a branch switch",
+    "content": "Git 2.47. After switching branches the parent repo points at a new submodule commit but the working tree still holds the old one.\n\n```bash\n$ git switch feature\n$ git status\n\tmodified:   vendor/lib (new commits)\n$ git -C vendor/lib log --oneline -1\n8f2ac31 old commit from main\n```\n\n`git submodule update --init --recursive` fixes it but I keep forgetting. Is there a config that makes checkout update submodules automatically, and does it also handle a submodule that was removed on the target branch?",
+    "tags": [
+      "git"
+    ]
+  },
+  {
+    "id": "b4-15",
+    "title": "git lfs files check out as 130-byte pointer text instead of the real binary",
+    "content": "Cloning a repo that uses Git LFS gives me pointer files, not assets. Git 2.47, git-lfs 3.5.\n\n```bash\n$ cat assets/hero.psd\nversion https://git-lfs.github.com/spec/v1\noid sha256:4d7a2b...\nsize 18422311\n```\n\n`git lfs env` reports the filter is installed for the repo. `git lfs pull` downloads them correctly, so the objects exist on the server. This happens in our CI container too, where the clone is done with `actions/checkout`. What makes the smudge filter not run during clone, and what is the reliable fix in CI?",
+    "tags": [
+      "git",
+      "github"
+    ]
+  },
+  {
+    "id": "b4-16",
+    "title": "git filter-branch rewrote history but the removed secret is still in the packfile",
+    "content": "I removed a credentials file from all history and force-pushed, but GitHub's secret scanning still flags the old blob and `git cat-file` finds it locally. Git 2.47.\n\n```bash\n$ git log --all --oneline -- config/secrets.yml\n(no output)\n$ git cat-file -p 9a4c1f2\naws_secret_access_key: AKIA...\n```\n\nI ran a `filter-branch` over `--all`. `git count-objects -v` still reports the object. I assume refs under `refs/original/` and the reflog keep it alive. What is the full sequence to actually drop the object locally, and does that even matter once it has been pushed?",
+    "tags": [
+      "git",
+      "github"
+    ]
+  },
+  {
+    "id": "b4-17",
+    "title": "GitHub Actions cache never hits, key restored as miss on every run",
+    "content": "My workflow restores nothing from cache even on repeated runs of the same commit.\n\n```bash\n- uses: actions/cache@v4\n  with:\n    path: ~/.npm\n    key: npm-${{ github.run_id }}\n    restore-keys: npm-\n```\n\nLog:\n\n```bash\nCache not found for input keys: npm-4823119, npm-\n```\n\nThe post step reports `Cache saved with key: npm-4823119`. I understand a save happened, so the cache service works. What is wrong with this key, and what should it be keyed on for an npm install?",
+    "tags": [
+      "github"
+    ]
+  },
+  {
+    "id": "b4-18",
+    "title": "Secrets are empty in a workflow triggered by pull_request from a fork",
+    "content": "A workflow that publishes preview builds fails on fork PRs because the secret is blank.\n\n```bash\non: pull_request\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n      - run: test -n \"$TOKEN\" || (echo 'empty'; exit 1)\n        env:\n          TOKEN: ${{ secrets.DEPLOY_TOKEN }}\n```\n\nOn PRs from branches in the same repo it works; from a fork the step prints `empty`. The secret is set at repo level, not environment level. I gather this is deliberate, but I still need preview deploys for external contributions. What trigger or job split is the accepted way to do this without handing the token to fork code?",
+    "tags": [
+      "github"
+    ]
+  },
+  {
+    "id": "b4-19",
+    "title": "Matrix job runs 12 combinations, I only want 4 with a paired os and node version",
+    "content": "I want ubuntu with Node 20 and macos with Node 22, but the matrix expands to the full cross product.\n\n```bash\nstrategy:\n  matrix:\n    os: [ubuntu-latest, macos-latest, windows-latest]\n    node: [18, 20, 22, 24]\n```\n\nThat is 12 jobs and most are wasted minutes. I tried listing pairs under `exclude` but the list got longer than the matrix itself. Is there a way to declare the combinations directly instead of subtracting from the product?",
+    "tags": [
+      "github"
+    ]
+  },
+  {
+    "id": "b4-20",
+    "title": "GitLab CI job cannot download artifacts from a previous stage, 404 on the artifact archive",
+    "content": "In GitLab CI the `test` job cannot see the build output.\n\n```bash\nbuild:\n  stage: build\n  script: npm run build\n  artifacts:\n    paths:\n      - dist/\n    expire_in: 1 hour\n\ntest:\n  stage: test\n  script: ls dist/\n```\n\nThe test job logs:\n\n```bash\nls: cannot access 'dist/': No such file or directory\n```\n\nThe build job's log shows `Uploading artifacts... dist/: found 42 matching artifact files`. Both jobs use the same runner tag. I did not set `dependencies` anywhere. Why would the download be skipped, and what should I check in the test job's log to confirm?",
+    "tags": [
+      "gitlab"
+    ]
+  },
+  {
+    "id": "b4-21",
+    "title": "GitLab cache is uploaded every job but restored empty on the next pipeline",
+    "content": "Cache round-trips within one pipeline but never across pipelines.\n\n```bash\ncache:\n  paths:\n    - node_modules/\n\nbuild:\n  script:\n    - npm ci\n    - npm run build\n```\n\nLog from the next pipeline:\n\n```bash\nChecking cache for default...\nNo URL provided, cache will not be downloaded from shared cache server.\nSuccessfully extracted cache\n```\n\nWe run shell executors on two self-hosted runners. The message about no URL is what I am stuck on — is a distributed cache backend required when more than one runner can pick up the job, and what happens today when the same runner does pick it up?",
+    "tags": [
+      "gitlab"
+    ]
+  },
+  {
+    "id": "b4-22",
+    "title": "Self-hosted GitLab runner leaves the workspace dirty, builds pick up files from the last job",
+    "content": "Our shell-executor runner reuses the build directory and old files leak into new builds.\n\n```bash\n$ ls build/\nmain.js  main.js.old  removed-feature.js\n```\n\n`removed-feature.js` was deleted from the repo three commits ago. The job script is just `npm run build`. `GIT_STRATEGY` is unset. I know the docker executor gets a clean container every time, but we need the shell executor for a licensed toolchain on that host. What settings make the shell executor start from a clean tree?",
+    "tags": [
+      "gitlab",
+      "linux"
+    ]
+  },
+  {
+    "id": "b4-23",
+    "title": "nginx proxy_pass drops the path prefix, upstream receives / instead of /api/users",
+    "content": "nginx 1.27 in front of a Node service. The upstream sees the wrong path.\n\n```bash\nlocation /api/ {\n    proxy_pass http://127.0.0.1:3000/;\n}\n```\n\nRequesting `/api/users` reaches the app as `/users`. I actually want the app to receive the full `/api/users`. I know one of these two forms strips the prefix and the other does not, but I keep getting them backwards and the docs sentence about it is easy to misread. Which is which, and does adding a variable in the proxy_pass change the rule?",
+    "tags": [
+      "nginx"
+    ]
+  },
+  {
+    "id": "b4-24",
+    "title": "nginx returns 502 Bad Gateway with upstream sent too big header while reading response header",
+    "content": "nginx 1.27 fronting a Rails app. Some responses fail intermittently.\n\n```bash\n2026/08/14 09:12:41 [error] 8123#8123: *4471 upstream sent too big header while reading response header from upstream, client: 10.0.0.4, server: app.example.com, request: \"GET /dashboard HTTP/1.1\", upstream: \"http://127.0.0.1:3000/dashboard\"\n```\n\nOnly logged-in users hit it. Their session cookie is large because we store flash messages in it. `curl` directly against port 3000 returns 200. Which buffer sizes govern the response header specifically, and is raising them the right fix or a band-aid here?",
+    "tags": [
+      "nginx"
+    ]
+  },
+  {
+    "id": "b4-25",
+    "title": "WebSocket connection through nginx closes after 60 seconds with code 1006",
+    "content": "nginx 1.27 proxies a WebSocket endpoint; the socket drops exactly every 60 seconds.\n\n```bash\nlocation /ws {\n    proxy_pass http://127.0.0.1:4000;\n    proxy_http_version 1.1;\n    proxy_set_header Upgrade $http_upgrade;\n    proxy_set_header Connection \"upgrade\";\n}\n```\n\nBrowser console shows close code 1006 with no reason. The app sends no data during idle periods. Connecting to port 4000 directly stays open for hours. 60 seconds matches a default I cannot place — which directive is it, and is raising it preferable to sending application-level pings?",
+    "tags": [
+      "nginx"
+    ]
+  },
+  {
+    "id": "b4-26",
+    "title": "Azure Blob returns AuthorizationPermissionMismatch with a managed identity that has Reader",
+    "content": "A container app reads blobs with a user-assigned managed identity and every request fails.\n\n```bash\nazure.core.exceptions.HttpResponseError: This request is not authorized to perform this operation using this permission.\nErrorCode:AuthorizationPermissionMismatch\n```\n\nThe identity has the `Reader` role assigned on the storage account, and `az role assignment list` confirms it at the account scope. The same code works with an account key. I waited over an hour in case of propagation delay. Is `Reader` the wrong role for data-plane access, and which role covers reading blob content specifically?",
+    "tags": [
+      "azure",
+      "python"
+    ]
+  },
+  {
+    "id": "b4-27",
+    "title": "systemd service fails with status=203/EXEC although the script runs fine from the shell",
+    "content": "Ubuntu 24.04. My unit will not start.\n\n```bash\n$ systemctl status worker\n Active: failed (Result: exit-code)\n Process: 4411 ExecStart=/opt/worker/run.sh (code=exited, status=203/EXEC)\n```\n\nUnit:\n\n```bash\n[Service]\nExecStart=/opt/worker/run.sh\nUser=worker\n```\n\nRunning `sudo -u worker /opt/worker/run.sh` works. `ls -l` shows `-rwxr-xr-x 1 worker worker`. The script starts with `#!/usr/bin/env node`. 203 means exec failed, so something about the interpreter or the path differs under systemd. What are the usual causes, and how do I see the real errno?",
+    "tags": [
+      "linux"
+    ]
+  },
+  {
+    "id": "b4-28",
+    "title": "Node process dies with EMFILE too many open files despite ulimit -n showing 65535",
+    "content": "Ubuntu 24.04, Node 22 under systemd. The process crashes under load.\n\n```bash\nError: EMFILE: too many open files, open '/var/data/chunk-8812.bin'\n```\n\nIn my login shell:\n\n```bash\n$ ulimit -n\n65535\n```\n\nBut:\n\n```bash\n$ cat /proc/$(pgrep -f worker.js)/limits | grep 'open files'\nMax open files            1024                 4096                 files\n```\n\nI set the limit in `/etc/security/limits.conf`. It clearly does not apply to the service. Which mechanism governs limits for a systemd-started process, and does the shell limit ever matter there?",
+    "tags": [
+      "linux",
+      "nodejs"
+    ]
+  },
+  {
+    "id": "b4-29",
+    "title": "Cron job never runs even though the crontab entry is correct and the script works manually",
+    "content": "Ubuntu 24.04. A backup script scheduled in the user crontab never produces output.\n\n```bash\n$ crontab -l\n30 2 * * * /home/deploy/backup.sh >> /var/log/backup.log 2>&1\n```\n\n`/var/log/backup.log` stays empty. `journalctl -u cron` shows:\n\n```bash\nCMD (/home/deploy/backup.sh >> /var/log/backup.log 2>&1)\n(CRON) info (No MTA installed, discarding output)\n```\n\nSo cron did fire. Running the script by hand works. The script calls `aws` and `pg_dump`, both installed under `/usr/local/bin`. What is different about the environment cron gives the job, and where do I confirm the actual failure if the redirect produces nothing?",
+    "tags": [
+      "linux"
+    ]
+  },
+  {
+    "id": "b4-30",
+    "title": "Disk shows 100% full but du reports only 12 GB used on a 100 GB volume",
+    "content": "Ubuntu 24.04 server, writes fail with ENOSPC.\n\n```bash\n$ df -h /\nFilesystem      Size  Used Avail Use% Mounted on\n/dev/nvme0n1p1  100G   99G     0 100% /\n$ du -sh / 2>/dev/null\n12G\t/\n```\n\nI deleted a large log file earlier today with `rm` while the application was still running. Nothing was freed. I suspect an open file descriptor keeps the inode alive. How do I confirm that and reclaim the space without restarting the service, if that is possible at all?",
+    "tags": [
+      "linux"
+    ]
+  },
+  {
+    "id": "b4-31",
+    "title": "S3 PutObject fails with AccessDenied although the IAM policy allows s3:PutObject",
+    "content": "An app running on EC2 cannot upload to a bucket.\n\n```bash\nAn error occurred (AccessDenied) when calling the PutObject operation: Access Denied\n```\n\nAttached role policy:\n\n```json\n{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Effect\": \"Allow\",\n      \"Action\": \"s3:PutObject\",\n      \"Resource\": \"arn:aws:s3:::my-app-uploads\"\n    }\n  ]\n}\n```\n\n`aws sts get-caller-identity` confirms the role is assumed. `s3:ListBucket` works with the same ARN. The bucket has no bucket policy and default encryption is SSE-KMS with a customer managed key. I see two possible causes here and I am not sure which one is biting me first.",
+    "tags": [
+      "aws"
+    ]
+  },
+  {
+    "id": "b4-32",
+    "title": "Lambda in a VPC times out calling the public internet after adding subnets",
+    "content": "My Lambda called a third-party HTTPS API fine until I put it in a VPC to reach RDS. Now every outbound call times out at 30 seconds.\n\n```bash\n{\"errorType\":\"Error\",\"errorMessage\":\"connect ETIMEDOUT 104.18.32.7:443\"}\n```\n\nThe function is in two private subnets, security group allows all egress, and RDS access works. The route table for those subnets has only the local route plus an internet gateway route. I assumed the internet gateway would cover it. What is the routing requirement for a Lambda ENI in a private subnet, and how do I verify it before redeploying?",
+    "tags": [
+      "aws"
+    ]
+  },
+  {
+    "id": "b4-33",
+    "title": "CloudWatch Logs shows no log group for my Lambda even though the function runs",
+    "content": "The function executes and returns 200 through API Gateway, but `/aws/lambda/my-fn` does not exist.\n\n```bash\n$ aws logs describe-log-groups --log-group-name-prefix /aws/lambda/my-fn\n{\n    \"logGroups\": []\n}\n```\n\nThe execution role is a custom one built by Terraform with only DynamoDB permissions. I expected Lambda to create the group regardless. Which specific permissions does the function's own role need for logging, and is the missing group the cause or a symptom?",
+    "tags": [
+      "aws"
+    ]
+  },
+  {
+    "id": "b4-34",
+    "title": "Azure Container Apps revision stuck in Activating, probe fails on port 80",
+    "content": "I deployed a container to Azure Container Apps and the new revision never becomes active.\n\n```bash\n$ az containerapp revision list -n api -g rg-prod --query \"[0].properties.{state:runningState,replicas:replicas}\"\n{\n  \"state\": \"Activating\",\n  \"replicas\": 0\n}\n```\n\nMy app listens on 8080 and logs `Listening on 0.0.0.0:8080`. The ingress block was created with defaults. I did not set `targetPort` explicitly. Does ingress default to 80, and is there a way to see the probe failure rather than inferring it from the state?",
+    "tags": [
+      "azure",
+      "docker"
+    ]
+  },
+  {
+    "id": "b4-35",
+    "title": "Cloud Run cold start takes 9 seconds on the first request after idle",
+    "content": "A Node 22 service on Cloud Run answers in 40 ms when warm, but the first request after a few minutes idle takes about 9 seconds.\n\n```bash\nhttpRequest.latency: 8.94s\n```\n\nThe container image is 480 MB and the app connects to Cloud SQL and warms a cache at module load. I know min instances would mask this, but I would like to understand the split first: how much of that 9 s is image pull versus my own startup work, and where in Cloud Logging or the trace does that boundary appear?",
+    "tags": [
+      "googlecloud",
+      "nodejs"
+    ]
+  },
+  {
+    "id": "b4-36",
+    "title": "GCS signed URL returns SignatureDoesNotMatch when generated from a service account key",
+    "content": "I generate a V4 signed URL for a GCS object and every request to it fails.\n\n```xml\n<Error>\n  <Code>SignatureDoesNotMatch</Code>\n  <Message>Access denied.</Message>\n</Error>\n```\n\nThe same service account can read the object with the client library directly. The URL is generated with a 15 minute expiry, and the object name contains a space and a `+`. Requests for objects with plain names work. Is this an encoding problem in the canonical request, and which part of the object name has to be encoded in the signature versus in the URL?",
+    "tags": [
+      "googlecloud",
+      "python"
+    ]
+  },
+  {
+    "id": "b4-37",
+    "title": "GKE pod gets 403 from GCS although its service account has storage.objectViewer",
+    "content": "A pod on GKE 1.31 with Workload Identity gets 403 from GCS.\n\n```bash\ngoogle.api_core.exceptions.Forbidden: 403 GET https://storage.googleapis.com/storage/v1/b/data-lake/o/report.csv: \nCaller does not have storage.objects.get access\n```\n\nThe Google service account has `roles/storage.objectViewer` on the bucket. The Kubernetes service account is annotated:\n\n```bash\nannotations:\n  iam.gke.io/gcp-service-account: data-reader@my-proj.iam.gserviceaccount.com\n```\n\nInside the pod, the metadata server returns the default compute service account, not `data-reader`. So the binding is not taking effect. What else has to be configured on the Google side for the annotation to be honoured?",
+    "tags": [
+      "googlecloud",
+      "kubernetes"
+    ]
+  },
+  {
+    "id": "b4-38",
+    "title": "webpack 5 bundle still contains the whole lodash despite named imports",
+    "content": "webpack 5, production mode. My bundle is 71 kB larger than expected.\n\n```javascript\nimport { debounce } from 'lodash';\n```\n\n`webpack-bundle-analyzer` shows every lodash module included. My config:\n\n```javascript\nmodule.exports = {\n  mode: 'production',\n  optimization: { usedExports: true },\n};\n```\n\nI checked that `mode: production` enables minification and tree shaking. `lodash` publishes CommonJS only, which I suspect is the whole story. What is the correct import or package to get only `debounce`, and does `sideEffects: false` in my own package.json help here at all?",
+    "tags": [
+      "webpack",
+      "javascript"
+    ]
+  },
+  {
+    "id": "b4-39",
+    "title": "webpack code splitting produces one 2 MB chunk, splitChunks does nothing",
+    "content": "Everything lands in `main.js` with webpack 5 despite dynamic imports.\n\n```javascript\nconst Editor = () => import('./Editor');\n\nmodule.exports = {\n  optimization: {\n    splitChunks: { chunks: 'all', minSize: 20000 },\n  },\n};\n```\n\nOutput:\n\n```bash\nasset main.js 2.04 MiB [emitted] [minimized] (name: main)\n```\n\nNo other chunk is emitted. The dynamic import sits inside a file that is itself only imported from a top-level `index.js`. I verified the arrow function is actually called at runtime. Is something in my build turning the dynamic import into a static one before webpack sees it?",
+    "tags": [
+      "webpack",
+      "javascript"
+    ]
+  },
+  {
+    "id": "b4-40",
+    "title": "webpack resolve alias works in the bundle but TypeScript reports cannot find module @/utils",
+    "content": "webpack 5 resolves my alias correctly, tsc does not.\n\n```javascript\nresolve: {\n  alias: { '@': path.resolve(__dirname, 'src') },\n},\n```\n\n```bash\nsrc/app.ts:3:23 - error TS2307: Cannot find module '@/utils' or its corresponding type declarations.\n```\n\nThe build output runs fine, so the alias itself is right. I gather webpack's resolver and the TypeScript compiler are separate concerns and each needs its own mapping. Which tsconfig fields do I need, and do they have to agree exactly with the webpack alias for editors to follow it too?",
+    "tags": [
+      "webpack",
+      "typescript"
+    ]
+  },
+  {
+    "id": "b4-41",
+    "title": "Source maps in production point at the bundled file, not the original TypeScript",
+    "content": "webpack 5 emits `.map` files but the browser shows compiled output in the stack traces.\n\n```javascript\nmodule.exports = {\n  mode: 'production',\n  devtool: 'eval',\n};\n```\n\nStack frame reads `main.4f21.js:1:88213`. The `.map` files are next to the bundles and served with 200. I picked `eval` because a blog post said it was fastest. I now suspect it is a development-only option. Which devtool values produce a separate file that maps back to the original sources, and what is the tradeoff between them?",
+    "tags": [
+      "webpack"
+    ]
+  },
+  {
+    "id": "b4-42",
+    "title": "Vite dev server works but the production build fails with Rollup failed to resolve import",
+    "content": "Vite 6. `vite dev` serves the app; `vite build` fails.\n\n```bash\n[vite]: Rollup failed to resolve import \"node:crypto\" from \"src/hash.ts\".\nThis is most likely unintended because it can break your application at build time.\n```\n\nThe file does `import { createHash } from 'node:crypto'` and is imported from a browser component. In dev it worked, which made me assume the import was fine. Why does dev tolerate it and the build not, and what is the browser-side replacement for a sha256 here?",
+    "tags": [
+      "vite",
+      "typescript"
+    ]
+  },
+  {
+    "id": "b4-43",
+    "title": "Vite env variable is undefined in the browser although it is set in .env",
+    "content": "Vite 6. `import.meta.env.API_URL` is `undefined` at runtime.\n\n```bash\n# .env\nAPI_URL=https://api.example.com\nVITE_APP_NAME=demo\n```\n\n```javascript\nconsole.log(import.meta.env.API_URL);      // undefined\nconsole.log(import.meta.env.VITE_APP_NAME); // \"demo\"\n```\n\nThe file is at the project root and the second variable proves it is being read. So there is a naming rule I am tripping over. Is the prefix configurable, and is there any risk in widening it?",
+    "tags": [
+      "vite"
+    ]
+  },
+  {
+    "id": "b4-44",
+    "title": "Vite build outputs assets with absolute /assets paths that 404 under a subdirectory deploy",
+    "content": "The app is served from `https://example.com/dashboard/` but every asset request goes to the domain root. Vite 6.\n\n```bash\nGET https://example.com/assets/index-8f2a.js  404\n```\n\nThe generated `index.html` contains `<script type=\"module\" src=\"/assets/index-8f2a.js\">`. Locally with `vite preview` it works because the app is at the root. Which build option controls this prefix, and does it also apply to assets referenced from CSS `url()` and from `new URL(..., import.meta.url)`?",
+    "tags": [
+      "vite"
+    ]
+  },
+  {
+    "id": "b4-45",
+    "title": "Vite HMR reloads the whole page instead of updating the component",
+    "content": "Vite 6 with React. Every save triggers a full reload and I lose component state.\n\n```bash\n[vite] page reload src/components/Panel.tsx\n```\n\nExpected `[vite] hmr update`. The file exports a component and also a helper:\n\n```typescript\nexport function Panel() { /* ... */ }\nexport const PANEL_ID = 'panel';\n```\n\n`@vitejs/plugin-react` is installed and listed in `plugins`. Other component files hot-update fine. What about a mixed export like this defeats fast refresh?",
+    "tags": [
+      "vite",
+      "typescript"
+    ]
+  },
+  {
+    "id": "b4-46",
+    "title": "Jest fails with Cannot use import statement outside a module on a node_modules package",
+    "content": "Jest 29 with ts-jest. My own files transpile fine, a dependency does not.\n\n```bash\n/app/node_modules/nanoid/index.js:1\nimport { urlAlphabet } from './url-alphabet/index.js'\n^^^^^^\nSyntaxError: Cannot use import statement outside a module\n```\n\nConfig:\n\n```json\n{\n  \"preset\": \"ts-jest\",\n  \"testEnvironment\": \"node\"\n}\n```\n\nThe package ships ESM only. I know Jest skips `node_modules` when transforming. Which option lets me carve out one package, and why is the default an ignore pattern rather than a list?",
+    "tags": [
+      "jest",
+      "typescript"
+    ]
+  },
+  {
+    "id": "b4-47",
+    "title": "jest.mock of a module has no effect, the real implementation still runs",
+    "content": "Jest 29. The mock is declared but the real HTTP call happens.\n\n```javascript\nimport { fetchUser } from './api';\nimport { getProfile } from './profile';\n\njest.mock('./api', () => ({ fetchUser: jest.fn(() => ({ id: 1 })) }));\n\ntest('profile', async () => {\n  await getProfile(1);\n  expect(fetchUser).toHaveBeenCalled();\n});\n```\n\nThe assertion fails and the test hits the network. `profile.js` does `const api = require('./api')` at module scope and calls `api.fetchUser(...)`. I thought `jest.mock` was hoisted above imports. Does the CommonJS require in the module under test change what the mock replaces?",
+    "tags": [
+      "jest",
+      "javascript"
+    ]
+  },
+  {
+    "id": "b4-48",
+    "title": "Jest test passes locally and fails in CI with Exceeded timeout of 5000 ms",
+    "content": "Jest 29. One async test is flaky, only in CI.\n\n```bash\n● uploads large file\n  thrown: \"Exceeded timeout of 5000 ms for a test.\"\n```\n\nThe test awaits a real upload against a container started in the same job. Locally the upload takes about 700 ms; the CI runner is slower and the container needs a moment to accept connections. I can raise the per-test timeout, but the test would then just fail slower when the container is genuinely down. What is the right structure — where should the wait-for-ready live, and does `beforeAll` share the same 5000 ms budget?",
+    "tags": [
+      "jest",
+      "github"
+    ]
+  },
+  {
+    "id": "b4-49",
+    "title": "Jest reports Jest did not exit one second after the test run has completed",
+    "content": "Jest 29 finishes green then hangs.\n\n```bash\nTests:       48 passed, 48 total\nJest did not exit one second after the test run has completed.\n```\n\nRunning with `--detectOpenHandles` prints:\n\n```bash\n●  TCPSERVERWRAP\n      at Server.listen (node_modules/express/lib/application.js:635:24)\n      at Object.<anonymous> (src/server.ts:22:5)\n```\n\nSo importing `server.ts` starts listening as a side effect. I would rather not restructure every test. Is `--forceExit` acceptable here, and what does it risk hiding?",
+    "tags": [
+      "jest",
+      "nodejs"
+    ]
+  },
+  {
+    "id": "b4-50",
+    "title": "Kubernetes CronJob runs twice for the same schedule after a control plane restart",
+    "content": "Kubernetes 1.31. A nightly job occasionally produces duplicate output.\n\n```bash\nspec:\n  schedule: \"0 2 * * *\"\n  concurrencyPolicy: Allow\n  jobTemplate:\n    spec:\n      template:\n        spec:\n          restartPolicy: OnFailure\n```\n\n`kubectl get jobs` after such a night shows two jobs a few seconds apart with the same scheduled time. The job writes to a database and is not idempotent. I gather the CronJob controller gives at-least-once semantics rather than exactly-once. Which fields reduce the duplicate window, and what has to happen in the job itself for this to be safe?",
+    "tags": [
+      "kubernetes"
+    ]
+  }
+]
