@@ -62,7 +62,11 @@ export const getUsers = async (
 
   try {
     const totalUsers = await User.countDocuments(filterQuery);
-    const users = await User.find(filterQuery).sort(sortCriteria).skip(skip).limit(pageSize).lean();
+    const users = await User.find(filterQuery)
+      .sort({ ...sortCriteria, _id: -1 })
+      .skip(skip)
+      .limit(pageSize)
+      .lean();
 
     const isNext = totalUsers > skip + users.length;
 

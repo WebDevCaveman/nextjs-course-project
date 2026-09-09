@@ -56,7 +56,11 @@ export const getTags = async (
 
   try {
     const totalTags = await Tag.countDocuments(filterQuery);
-    const tags = await Tag.find(filterQuery).sort(sortCriteria).skip(skip).limit(pageSize).lean();
+    const tags = await Tag.find(filterQuery)
+      .sort({ ...sortCriteria, _id: -1 })
+      .skip(skip)
+      .limit(pageSize)
+      .lean();
 
     const isNext = totalTags > skip + tags.length;
 

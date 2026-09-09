@@ -111,7 +111,7 @@ export const getAnswers = async (
   try {
     const [answers, totalAnswers] = await Promise.all([
       Answer.find({ question: questionId })
-        .sort(sortCriteria)
+        .sort({ ...sortCriteria, _id: -1 })
         .skip(skip)
         .limit(pageSize)
         .populate<{ author: IUserDoc }>("author", "_id name image")

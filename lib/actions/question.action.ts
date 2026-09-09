@@ -265,7 +265,7 @@ const getRecommendedQuestions = async function ({ userId, query, skip, limit }: 
   const questions = await Question.find(recommendedQuery)
     .populate("tags", "name")
     .populate("author", "name image")
-    .sort({ upvotes: -1, views: -1 }) // prioritizing engagement
+    .sort({ upvotes: -1, views: -1, _id: -1 }) // prioritizing engagement, _id breaks ties so a row cannot straddle two pages
     .skip(skip)
     .limit(limit)
     .lean();
@@ -334,7 +334,7 @@ export const getQuestions = async (
     const questions = await Question.find(filterQuery)
       .populate<{ tags: ITagDoc[] }>("tags", "name")
       .populate<{ author: IUserDoc }>("author", "name image")
-      .sort(sortCriteria)
+      .sort({ ...sortCriteria, _id: -1 })
       .skip(skip)
       .limit(pageSize)
       .lean();
