@@ -21,7 +21,7 @@ const Home = async ({ searchParams }: SearchParams) => {
     query: query || "",
     filter: filter || "",
     page: Number(page) || 1,
-    pageSize: Number(pageSize) || 10,
+    pageSize: Number(pageSize) || 8,
   });
 
   const { questions, isNext } = data || {};
