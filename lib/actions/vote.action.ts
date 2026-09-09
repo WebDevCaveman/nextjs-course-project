@@ -16,6 +16,9 @@ import { NotFoundError, UnauthorizedError } from "../http-errors";
 import { Question, Answer, Vote } from "@/database";
 import ROUTES from "@/constants/routes";
 import { revalidatePath } from "next/cache";
+import { createInteraction } from "./interaction.action";
+import { CreateInteractionParams } from "@/types/action";
+import { after } from "next/server";
 
 const updateVoteCount = async (params: UpdateVoteCountParams, session?: ClientSession): Promise<void> => {
   const { targetId, targetType, voteType, change } = params;
@@ -44,17 +47,27 @@ export const createVote = async (params: CreateVoteParams): Promise<ActionRespon
   if (!userId) return handleError(new UnauthorizedError("User must be logged in to vote")) as ErrorResponse;
 
   let questionId = targetId;
+  let authorId: string;
+
   if (targetType === "question") {
-    const question = await Question.exists({ _id: targetId });
+    const question = await Question.findById(targetId).select("author");
     if (!question) return handleError(new NotFoundError("Question")) as ErrorResponse;
+    authorId = question.author.toString();
   } else {
     const answer = await Answer.findById(targetId);
     if (!answer) return handleError(new NotFoundError("Answer")) as ErrorResponse;
     questionId = answer.question.toString();
+    authorId = answer.author.toString();
   }
 
   const session = await mongoose.startSession();
   session.startTransaction();
+
+  // Nazwy interakcji zbieramy do tablicy, zamiast wywolywac createInteraction w miejscu,
+  // bo ta funkcja otwiera wlasna transakcje - nie moze biec wewnatrz tej, ktora glosuje.
+  // Zapis idzie dopiero po commicie, w after(). Przy zmianie glosu wpisy sa dwa:
+  // zdjecie starego glosu i dodanie nowego, kazdy z osobnymi punktami reputacji.
+  const interactions: CreateInteractionParams["action"][] = [];
 
   try {
     const existingVote = await Vote.findOne({ author: userId, id: targetId, type: targetType }).session(session);
@@ -63,11 +76,13 @@ export const createVote = async (params: CreateVoteParams): Promise<ActionRespon
         // If the existing vote is the same as the new vote type, remove the vote
         await Vote.deleteOne({ _id: existingVote._id }).session(session);
         await updateVoteCount({ targetId, targetType, voteType, change: -1 }, session);
+        interactions.push(`${voteType}_remove`);
       } else {
         // If the existing vote is different, update the vote type
         await Vote.updateOne({ _id: existingVote._id }, { voteType }).session(session);
         await updateVoteCount({ targetId, targetType, voteType: existingVote.voteType, change: -1 }, session);
         await updateVoteCount({ targetId, targetType, voteType, change: 1 }, session);
+        interactions.push(`${existingVote.voteType}_remove`, `${voteType}_add`);
       }
     } else {
       await Vote.create(
@@ -82,9 +97,22 @@ export const createVote = async (params: CreateVoteParams): Promise<ActionRespon
         { session }
       );
       await updateVoteCount({ targetId, targetType, voteType, change: 1 }, session);
+      interactions.push(`${voteType}_add`);
     }
 
     await session.commitTransaction();
+
+    after(async () => {
+      for (const interactionAction of interactions) {
+        await createInteraction({
+          action: interactionAction,
+          actionTarget: targetType,
+          actionId: targetId,
+          authorId,
+        });
+      }
+    });
+
     revalidatePath(ROUTES.QUESTION(questionId));
     return { success: true };
   } catch (error) {

@@ -1,3 +1,4 @@
+import { INTERACTIONS } from "@/constants/interactions";
 import * as z from "zod";
 
 export const SignInSchema = z.object({
@@ -103,6 +104,7 @@ export const GetTagQuestionsSchema = PaginatedSearchParamsSchema.extend({
 
 export const IncrementViewsSchema = z.object({
   questionId: z.string().min(1, { message: "Question ID is required" }),
+  userId: z.string().optional(),
 });
 
 export const AnswerSchema = z.object({
@@ -159,4 +161,18 @@ export const DeleteQuestionSchema = z.object({
 
 export const DeleteAnswerSchema = z.object({
   answerId: z.string().min(1, { message: "Answer ID is required" }),
+});
+
+export const CreateInteractionSchema = z.object({
+  action: z.enum(INTERACTIONS, { message: "Action must be a valid interaction type" }),
+  actionTarget: z.enum(["question", "answer"], { message: "Action target must be either 'question' or 'answer'" }),
+  actionId: z.string().min(1, { message: "Action ID is required" }),
+  authorId: z.string().optional(),
+  query: z.string().optional(),
+});
+
+export const UpdateUserReputationSchema = z.object({
+  userId: z.string().min(1, { message: "User ID is required" }),
+  authorId: z.string().optional(),
+  interaction: z.enum(INTERACTIONS, { message: "Interaction must be a valid interaction type" }),
 });

@@ -1,12 +1,12 @@
 import { Schema, models, model, Types, Document, Model } from "mongoose";
-
-export const INTERACTIONS = ["view", "upvote", "downvote", "bookmark", "post", "edit", "delete", "search"] as const;
+import { INTERACTIONS } from "@/constants/interactions";
 
 export interface IInteraction {
   user: Types.ObjectId;
   action: (typeof INTERACTIONS)[number];
   actionId: Types.ObjectId;
   actionType: "question" | "answer";
+  query?: string;
 }
 
 export interface IInteractionDoc extends IInteraction, Document {}
@@ -21,9 +21,12 @@ const InteractionSchema = new Schema<IInteraction>(
     },
     actionId: { type: Schema.Types.ObjectId, required: true }, // 'questionId', 'answerId',
     actionType: { type: String, enum: ["question", "answer"], required: true },
+    query: { type: String },
   },
   { timestamps: true }
 );
+
+InteractionSchema.index({ user: 1, action: 1, actionId: 1 }, { unique: true });
 
 const Interaction: Model<IInteraction> = models?.Interaction || model<IInteraction>("Interaction", InteractionSchema);
 

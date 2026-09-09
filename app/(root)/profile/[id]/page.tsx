@@ -23,7 +23,12 @@ const Profile = async ({ params, searchParams }: RouteParams) => {
   return (
     <>
       <ProfileHeader user={user} isOwnProfile={loggedInUser?.user?.id === user._id} />
-      <Stats totalQuestions={totalQuestions} totalAnswers={totalAnswers} badges={{ bronze: 0, silver: 0, gold: 0 }} />
+      <Stats
+        totalQuestions={totalQuestions}
+        totalAnswers={totalAnswers}
+        badges={{ bronze: 0, silver: 0, gold: 0 }}
+        reputationPoints={user.reputation || 0}
+      />
 
       <div className="flex flex-col gap-10 lg:flex-row">
         <div className="min-w-0 flex-1">

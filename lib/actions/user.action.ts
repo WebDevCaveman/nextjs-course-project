@@ -1,16 +1,17 @@
 "use server";
 
-import { Types, type PipelineStage, type QueryFilter } from "mongoose";
+import { ClientSession, Types, type PipelineStage, type QueryFilter } from "mongoose";
 import action from "../handlers/action";
 import handleError from "../handlers/error";
 import { GetUserQuestionsAndAnswersSchema, GetUserDetailsSchema, PaginatedSearchParamsSchema } from "../validations";
 import { escapeRegExp } from "../utils";
 import { User, Question, Answer } from "@/database";
 import { usersFilters } from "@/constants";
-import { GetUserDetailsParams, GetUserQuestionsAndAnswersParams } from "@/types/action";
+import { GetUserDetailsParams, GetUserQuestionsAndAnswersParams, UpdateUserReputationParams } from "@/types/action";
 import { NotFoundError } from "../http-errors";
 import { ITagDoc } from "@/database/tag.model";
 import { IUserDoc } from "@/database/user.model";
+import { INTERACTIONS_POINTS } from "@/constants/interactions";
 
 export const getUsers = async (
   params: PaginatedSearchParams
@@ -194,4 +195,22 @@ export const getUserTags = async (
   } catch (error) {
     return handleError(error) as ErrorResponse;
   }
+};
+
+export const updateUserReputation = async (
+  params: UpdateUserReputationParams,
+  session?: ClientSession
+): Promise<void> => {
+  if (!session) throw new Error("Client session is required");
+
+  const { userId, authorId, interaction } = params;
+
+  await User.updateOne({ _id: userId }, { $inc: { reputation: INTERACTIONS_POINTS[interaction].user } }, { session });
+
+  if (authorId)
+    await User.updateOne(
+      { _id: authorId },
+      { $inc: { reputation: INTERACTIONS_POINTS[interaction].author } },
+      { session }
+    );
 };

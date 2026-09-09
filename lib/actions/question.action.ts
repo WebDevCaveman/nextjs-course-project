@@ -39,6 +39,8 @@ import { revalidatePath } from "next/cache";
 import Answer from "@/database/answer.model";
 import Collection from "@/database/collection.model";
 import { Vote, Interaction } from "@/database";
+import { createInteraction } from "./interaction.action";
+import { after } from "next/server";
 
 export const createQuestion = async (params: CreateQuestionParams): Promise<ActionResponse<Question>> => {
   const validationResult = await action({ params, schema: AskQuestionSchema, authorize: true });
@@ -49,6 +51,8 @@ export const createQuestion = async (params: CreateQuestionParams): Promise<Acti
 
   const { title, content, tags } = validationResult.params!;
   const userId = validationResult?.session?.user?.id;
+
+  if (!userId) return handleError(new UnauthorizedError()) as ErrorResponse;
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -91,6 +95,14 @@ export const createQuestion = async (params: CreateQuestionParams): Promise<Acti
     await Question.findByIdAndUpdate(question._id, { $set: { tags: tagIds } }, { session });
 
     await session.commitTransaction();
+
+    after(async () => {
+      await createInteraction({
+        action: "question_post",
+        actionTarget: "question",
+        actionId: question._id.toString(),
+      });
+    });
 
     return { success: true, data: JSON.parse(JSON.stringify(question)) };
   } catch (error) {
@@ -163,6 +175,14 @@ export const editQuestion = async (params: EditQuestionParams): Promise<ActionRe
     await question.save({ session });
 
     await session.commitTransaction();
+
+    after(async () => {
+      await createInteraction({
+        action: "edit",
+        actionTarget: "question",
+        actionId: question._id.toString(),
+      });
+    });
 
     return { success: true, data: JSON.parse(JSON.stringify(question)) };
   } catch (error) {
@@ -262,11 +282,20 @@ export const incrementViews = async (params: IncrementViewsParams): Promise<Acti
     return handleError(validationResult) as ErrorResponse;
   }
 
-  const { questionId } = validationResult.params!;
+  const { questionId, userId } = validationResult.params!;
 
   try {
     const question = await Question.findByIdAndUpdate(questionId, { $inc: { views: 1 } }, { new: true });
     if (!question) throw new NotFoundError("Question");
+
+    if (userId) {
+      await createInteraction({
+        action: "view",
+        actionTarget: "question",
+        actionId: questionId,
+      });
+    }
+
     return { success: true, data: { views: question.views } };
   } catch (error) {
     return handleError(error) as ErrorResponse;
@@ -320,6 +349,14 @@ export const deleteQuestion = async (params: DeleteQuestionParams): Promise<Acti
 
     // Musimy wykorzystac taki zapis poniewaz lista tagow wyswietla sie w RightSidebar a on z kolei umieszczony jest w layout a nie na konkretnej stronie. Dodatkowo taki zapis odswiezy nam wszystkie strony korzystajace z layout - a wiec takze strone porfile i collections
     revalidatePath("/(root)", "layout");
+
+    after(async () => {
+      await createInteraction({
+        action: "question_delete",
+        actionTarget: "question",
+        actionId: questionId,
+      });
+    });
 
     return { success: true };
   } catch (error) {

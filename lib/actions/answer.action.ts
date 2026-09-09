@@ -11,6 +11,8 @@ import { revalidatePath } from "next/cache";
 import { IUserDoc } from "@/database/user.model";
 import { answersFilters } from "@/constants";
 import { NotFoundError, UnauthorizedError } from "../http-errors";
+import { createInteraction } from "./interaction.action";
+import { after } from "next/server";
 
 export const createAnswer = async (params: CreateAnswerParams): Promise<ActionResponse<Answer>> => {
   const validationResult = await action({ params, schema: AnswerServerSchema, authorize: true });
@@ -47,6 +49,16 @@ export const createAnswer = async (params: CreateAnswerParams): Promise<ActionRe
     await question.save({ session });
 
     await session.commitTransaction();
+
+    after(async () => {
+      await createInteraction({
+        action: "answer_post",
+        actionTarget: "answer",
+        actionId: answer._id.toString(),
+        authorId: question.author.toString(),
+      });
+    });
+
     revalidatePath(ROUTES.QUESTION(questionId));
     return { success: true, data: JSON.parse(JSON.stringify(answer)) };
   } catch (error) {
@@ -129,6 +141,15 @@ export const deleteAnswer = async (params: DeleteAnswerParams): Promise<ActionRe
     await answer.deleteOne({ session });
 
     await session.commitTransaction();
+
+    after(async () => {
+      await createInteraction({
+        action: "answer_delete",
+        actionTarget: "answer",
+        actionId: answerId,
+        authorId: question?.author.toString(),
+      });
+    });
 
     revalidatePath(ROUTES.PROFILE(userId));
     if (question) revalidatePath(ROUTES.QUESTION(question._id.toString()));

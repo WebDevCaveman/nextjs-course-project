@@ -12,6 +12,8 @@ import { PaginatedSearchParamsSchema } from "../validations";
 import { collectionsFilters } from "@/constants";
 import mongoose, { PipelineStage } from "mongoose";
 import { escapeRegExp } from "../utils";
+import { createInteraction } from "./interaction.action";
+import { after } from "next/server";
 
 export const toggleSaveQuestion = async (params: CollectionBaseParams): Promise<ActionResponse<{ saved: boolean }>> => {
   const validationResult = await action({ params, schema: CollectionBaseSchema, authorize: true });
@@ -35,11 +37,31 @@ export const toggleSaveQuestion = async (params: CollectionBaseParams): Promise<
 
     if (collection) {
       await Collection.findByIdAndDelete(collection._id);
+
+      after(async () => {
+        await createInteraction({
+          action: "bookmark_remove",
+          actionTarget: "question",
+          actionId: questionId,
+          authorId: question.author.toString(),
+        });
+      });
+
       revalidatePath(ROUTES.QUESTION(questionId));
       return { success: true, data: { saved: false } };
     }
 
     await Collection.create({ question: questionId, author: userId });
+
+    after(async () => {
+      await createInteraction({
+        action: "bookmark_add",
+        actionTarget: "question",
+        actionId: questionId,
+        authorId: question.author.toString(),
+      });
+    });
+
     revalidatePath(ROUTES.QUESTION(questionId));
     return { success: true, data: { saved: true } };
   } catch (error) {

@@ -1,3 +1,5 @@
+import { INTERACTIONS, ScoredInteraction } from "@/constants/interactions";
+
 export interface SignInWithOAuthParams {
   provider: "google" | "github";
   providerAccountId: string;
@@ -44,6 +46,7 @@ export interface GetTagQuestionsParams extends Omit<PaginatedSearchParams, "filt
 
 export interface IncrementViewsParams {
   questionId: string;
+  userId?: string;
 }
 
 export interface CreateAnswerParams {
@@ -98,4 +101,18 @@ export interface DeleteQuestionParams {
 
 export interface DeleteAnswerParams {
   answerId: string;
+}
+
+export interface CreateInteractionParams {
+  action: (typeof INTERACTIONS)[number];
+  actionTarget: "question" | "answer";
+  actionId: string;
+  authorId?: string; // User who owns the content
+  query?: string; // Search phrase
+}
+
+export interface UpdateUserReputationParams {
+  userId: string;
+  authorId?: string; // User who owns the content
+  interaction: ScoredInteraction;
 }

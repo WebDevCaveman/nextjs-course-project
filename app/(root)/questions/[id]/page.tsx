@@ -3,7 +3,7 @@ import TagList from "@/components/tag-list/TagList";
 import { HugeIcon } from "@/components/icons/huge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatRelativeTime } from "@/lib/time";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { getQuestion, incrementViews } from "@/lib/actions/question.action";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -67,7 +67,7 @@ const QuestionDetails = async ({ params, searchParams }: RouteParams) => {
 
   // Dlatego ostatecznie korzystamy z after, aby nasza strona wyswietlila sie od razu, a aktulizacja liczby wyswietlen nastapila pozniej - wiec user zobaczy aktualny wynik dopiero po odswiezeniu strony.
   after(async () => {
-    await incrementViews({ questionId: id });
+    await incrementViews({ questionId: id, userId });
   });
 
   return (
