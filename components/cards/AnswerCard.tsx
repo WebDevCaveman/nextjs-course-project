@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import VotesSkeleton from "@/components/votes/VotesSkeleton";
 import ActionBtns from "../user/ActionBtns";
 import Link from "next/link";
 import Markdown from "react-markdown";
@@ -54,7 +55,7 @@ const AnswerCard = ({
           {showActionBtns ? (
             <ActionBtns type="answer" targetId={_id} />
           ) : hasVotedPromise ? (
-            <Suspense fallback={<div>Loading...</div>}>
+            <Suspense fallback={<VotesSkeleton />}>
               <Votes
                 upvotes={upvotes}
                 downvotes={downvotes}

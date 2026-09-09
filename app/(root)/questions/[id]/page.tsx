@@ -20,6 +20,8 @@ import { Separator } from "@/components/ui/separator";
 import Votes from "@/components/votes/Votes";
 import { getAnswerVotes, hasVoted } from "@/lib/actions/vote.action";
 import { Suspense } from "react";
+import VotesSkeleton from "@/components/votes/VotesSkeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import SaveQuestion from "@/components/questions/SaveQuestion";
 import { hasSaved } from "@/lib/actions/collection.action";
 import ActionBtns from "@/components/user/ActionBtns";
@@ -84,7 +86,7 @@ const QuestionDetails = async ({ params, searchParams }: RouteParams) => {
 
           {userId && userId !== question.author._id && (
             <div className="flex items-center gap-2">
-              <Suspense fallback={<div>Loading...</div>}>
+              <Suspense fallback={<VotesSkeleton />}>
                 <Votes
                   upvotes={question.upvotes}
                   downvotes={question.downvotes}
@@ -93,7 +95,7 @@ const QuestionDetails = async ({ params, searchParams }: RouteParams) => {
                   hasVotedPromise={hasVoted({ targetId: id, targetType: "question" })}
                 />
               </Suspense>
-              <Suspense fallback={<div>Loading...</div>}>
+              <Suspense fallback={<Skeleton className="size-[18px] rounded-sm" />}>
                 <SaveQuestion questionId={question._id} hasSavedPromise={hasSaved({ questionId: question._id })} />
               </Suspense>
             </div>
