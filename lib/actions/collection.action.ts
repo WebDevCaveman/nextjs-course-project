@@ -171,12 +171,18 @@ export const getSavedQuestions = async (
       { $sort: sortCriteria },
       { $skip: skip },
       { $limit: pageSize },
+      // Sub-pipeline w lookupie odpowiada dokladnie temu, co getQuestions robi przez
+      // .populate("author", "name image") i .populate("tags", "name"). Bez niego lookup
+      // dociaga cale dokumenty: autora razem z emailem i reputacja, a tagi razem z polem
+      // `questions` - a wtedy ta sama TagList rysuje na karcie licznik, ktorego na liscie
+      // pytan nie ma. Karta jest jedna, wiec i ksztalt danych musi byc jeden.
       {
         $lookup: {
           from: "users",
           localField: "question.author",
           foreignField: "_id",
           as: "question.author",
+          pipeline: [{ $project: { name: 1, image: 1 } }],
         },
       },
       { $unwind: "$question.author" },
@@ -186,6 +192,7 @@ export const getSavedQuestions = async (
           localField: "question.tags",
           foreignField: "_id",
           as: "question.tags",
+          pipeline: [{ $project: { name: 1 } }],
         },
       },
       {
