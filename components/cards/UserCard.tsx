@@ -2,15 +2,12 @@ import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import ROUTES from "@/constants/routes";
 import TagList from "@/components/tag-list/TagList";
+import { getUserTags } from "@/lib/actions/user.action";
 
-// ponytail: tagi zamockowane - docelowo najczestsze tagi uzytkownika liczone w akcji getUsers
-const MOCK_TAGS: Tag[] = [
-  { _id: "typescript", name: "typescript" },
-  { _id: "react", name: "react" },
-  { _id: "mongodb", name: "mongodb" },
-];
+const UserCard = async ({ _id, name, username, image }: User) => {
+  const { data } = await getUserTags({ userId: _id });
+  const tags = data?.tags.slice(0, 3) ?? [];
 
-const UserCard = ({ _id, name, username, image }: User) => {
   return (
     <article className="border-line bg-background shadow-card hover:border-accent-solid flex flex-col items-center gap-3.5 rounded-xl border p-5 text-center md:p-9">
       <Link href={ROUTES.PROFILE(_id)} className="text-fg flex flex-col items-center gap-3.5">
@@ -25,7 +22,7 @@ const UserCard = ({ _id, name, username, image }: User) => {
         </div>
       </Link>
 
-      <TagList tags={MOCK_TAGS} inline size="sm" className="justify-center" />
+      <TagList tags={tags} inline size="sm" className="justify-center" />
     </article>
   );
 };
