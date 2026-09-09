@@ -34,6 +34,10 @@ interface Answer {
   question?: Pick<Question, "_id" | "title">;
 }
 
+interface AnswerWithQuestion extends Omit<Answer, "question"> {
+  question: Pick<Question, "_id" | "title" | "content">;
+}
+
 interface Vote {
   _id: string;
   author: Author;

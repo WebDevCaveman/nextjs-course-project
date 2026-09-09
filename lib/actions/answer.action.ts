@@ -1,9 +1,21 @@
 "use server";
 
-import { CreateAnswerParams, DeleteAnswerParams, GetAnswersParams } from "@/types/action";
+import {
+  CreateAnswerParams,
+  DeleteAnswerParams,
+  EditAnswerParams,
+  GetAnswerParams,
+  GetAnswersParams,
+} from "@/types/action";
 import action from "../handlers/action";
 import handleError from "../handlers/error";
-import { AnswerServerSchema, DeleteAnswerSchema, GetAnswersSchema } from "../validations";
+import {
+  AnswerServerSchema,
+  DeleteAnswerSchema,
+  EditAnswerSchema,
+  GetAnswerSchema,
+  GetAnswersSchema,
+} from "../validations";
 import mongoose from "mongoose";
 import { Answer, Interaction, Question, Vote } from "@/database";
 import ROUTES from "@/constants/routes";
@@ -160,5 +172,67 @@ export const deleteAnswer = async (params: DeleteAnswerParams): Promise<ActionRe
     return handleError(error) as ErrorResponse;
   } finally {
     await session.endSession();
+  }
+};
+
+export const getAnswer = async (params: GetAnswerParams): Promise<ActionResponse<AnswerWithQuestion>> => {
+  const validationResult = await action({ params, schema: GetAnswerSchema });
+
+  if (validationResult instanceof Error) {
+    return handleError(validationResult) as ErrorResponse;
+  }
+
+  const { answerId } = validationResult.params!;
+
+  try {
+    // Pytanie doczytujemy razem z trescia, bo formularz edycji karmi nia "Enhance with AI".
+    const answer = await Answer.findById(answerId)
+      .populate("question", "_id title content")
+      .populate<{ author: IUserDoc }>("author", "_id name image")
+      .lean();
+
+    if (!answer) throw new NotFoundError("Answer");
+
+    return { success: true, data: JSON.parse(JSON.stringify(answer)) };
+  } catch (error) {
+    return handleError(error) as ErrorResponse;
+  }
+};
+
+export const editAnswer = async (params: EditAnswerParams): Promise<ActionResponse<Answer>> => {
+  const validationResult = await action({ params, schema: EditAnswerSchema, authorize: true });
+
+  if (validationResult instanceof Error) {
+    return handleError(validationResult) as ErrorResponse;
+  }
+
+  const { answerId, content } = validationResult.params!;
+  const userId = validationResult.session?.user?.id;
+  if (!userId) return handleError(new UnauthorizedError()) as ErrorResponse;
+
+  try {
+    const answer = await Answer.findById(answerId);
+
+    if (!answer) throw new NotFoundError("Answer");
+    if (answer.author.toString() !== userId) throw new UnauthorizedError();
+
+    answer.content = content;
+    await answer.save();
+
+    const questionId = answer.question.toString();
+    revalidatePath(ROUTES.QUESTION(questionId));
+    revalidatePath(ROUTES.PROFILE(userId));
+
+    after(async () => {
+      await createInteraction({
+        action: "edit",
+        actionTarget: "answer",
+        actionId: answerId,
+      });
+    });
+
+    return { success: true, data: JSON.parse(JSON.stringify(answer)) };
+  } catch (error) {
+    return handleError(error) as ErrorResponse;
   }
 };

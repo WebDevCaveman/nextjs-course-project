@@ -103,6 +103,15 @@ export interface DeleteAnswerParams {
   answerId: string;
 }
 
+export interface GetAnswerParams {
+  answerId: string;
+}
+
+export interface EditAnswerParams {
+  answerId: string;
+  content: string;
+}
+
 export interface CreateInteractionParams {
   action: (typeof INTERACTIONS)[number];
   actionTarget: "question" | "answer";

@@ -12,7 +12,9 @@ import dynamic from "next/dynamic";
 import { useRef, useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { createAnswer } from "@/lib/actions/answer.action";
+import { createAnswer, editAnswer } from "@/lib/actions/answer.action";
+import { useRouter } from "next/navigation";
+import ROUTES from "@/constants/routes";
 import { api } from "@/lib/api";
 
 const Editor = dynamic(() => import("@/components/editor"), {
@@ -24,20 +26,36 @@ interface AnswerFormProps {
   questionId: string;
   questionTitle: string;
   questionContent: string;
+  answer?: Answer;
+  isEdit?: boolean;
 }
 
-const AnswerForm = ({ questionId, questionTitle, questionContent }: AnswerFormProps) => {
+const AnswerForm = ({ questionId, questionTitle, questionContent, answer, isEdit }: AnswerFormProps) => {
+  const router = useRouter();
   const [isAnswering, startAnsweringTransition] = useTransition();
   const [isAISubmitting, setIsAISubmitting] = useState(false);
   const form = useForm({
     resolver: zodResolver(AnswerSchema),
-    defaultValues: { content: "" },
+    defaultValues: { content: answer?.content || "" },
   });
 
   const editorRef = useRef<MDXEditorMethods>(null);
 
   const handleSubmit = async (values: z.infer<typeof AnswerSchema>) => {
     startAnsweringTransition(async () => {
+      if (isEdit && answer) {
+        const result = await editAnswer({ answerId: answer._id, content: values.content });
+
+        if (result.success) {
+          toast.success("Answer updated successfully!");
+          router.push(ROUTES.QUESTION(questionId));
+        } else {
+          toast.error(result.error?.message || "Failed to update answer.");
+        }
+
+        return;
+      }
+
       const result = await createAnswer({ questionId, content: values.content });
 
       if (result.success) {
@@ -88,7 +106,7 @@ const AnswerForm = ({ questionId, questionTitle, questionContent }: AnswerFormPr
           <Field data-invalid={fieldState.invalid}>
             <div className="flex flex-wrap items-center justify-between gap-4">
               <FieldLabel onClick={() => editorRef.current?.focus()}>
-                Write your answer here <span className="text-accent-solid">*</span>
+                {isEdit ? "Edit your answer" : "Write your answer here"} <span className="text-accent-solid">*</span>
               </FieldLabel>
               <Button
                 type="button"
@@ -108,7 +126,7 @@ const AnswerForm = ({ questionId, questionTitle, questionContent }: AnswerFormPr
       />
 
       <Button type="submit" variant="cta" size="cta" className="self-end" disabled={isAnswering}>
-        {isAnswering ? "Submitting..." : "Submit Answer"}
+        {isAnswering ? (isEdit ? "Updating..." : "Submitting...") : isEdit ? "Update Answer" : "Submit Answer"}
       </Button>
     </form>
   );

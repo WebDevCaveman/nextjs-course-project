@@ -163,6 +163,14 @@ export const DeleteAnswerSchema = z.object({
   answerId: z.string().min(1, { message: "Answer ID is required" }),
 });
 
+export const GetAnswerSchema = z.object({
+  answerId: z.string().min(1, { message: "Answer ID is required" }),
+});
+
+export const EditAnswerSchema = AnswerSchema.extend({
+  answerId: z.string().min(1, { message: "Answer ID is required" }),
+});
+
 export const CreateInteractionSchema = z.object({
   action: z.enum(INTERACTIONS, { message: "Action must be a valid interaction type" }),
   actionTarget: z.enum(["question", "answer"], { message: "Action target must be either 'question' or 'answer'" }),
