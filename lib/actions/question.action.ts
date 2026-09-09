@@ -84,7 +84,7 @@ export const createQuestion = async (params: CreateQuestionParams): Promise<Acti
       const upsertedTag = await Tag.findOneAndUpdate(
         { name: { $regex: new RegExp(`^${escapeRegExp(tag.toLowerCase())}$`, "i") } },
         { $setOnInsert: { name: tag }, $inc: { questions: 1 } },
-        { upsert: true, new: true, session }
+        { upsert: true, returnDocument: "after", session }
       );
 
       tagIds.push(upsertedTag._id);
@@ -149,7 +149,7 @@ export const editQuestion = async (params: EditQuestionParams): Promise<ActionRe
         const existingTag = await Tag.findOneAndUpdate(
           { name: { $regex: new RegExp(`^${escapeRegExp(tag.toLowerCase())}$`, "i") } },
           { $setOnInsert: { name: tag }, $inc: { questions: 1 } },
-          { upsert: true, new: true, session }
+          { upsert: true, returnDocument: "after", session }
         );
 
         newTagDocuments.push({ question: questionId, tag: existingTag._id });
@@ -285,7 +285,7 @@ export const incrementViews = async (params: IncrementViewsParams): Promise<Acti
   const { questionId, userId } = validationResult.params!;
 
   try {
-    const question = await Question.findByIdAndUpdate(questionId, { $inc: { views: 1 } }, { new: true });
+    const question = await Question.findByIdAndUpdate(questionId, { $inc: { views: 1 } }, { returnDocument: "after" });
     if (!question) throw new NotFoundError("Question");
 
     if (userId) {

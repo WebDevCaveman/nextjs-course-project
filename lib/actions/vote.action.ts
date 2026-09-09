@@ -25,7 +25,7 @@ const updateVoteCount = async (params: UpdateVoteCountParams, session?: ClientSe
   const voteField = voteType === "upvote" ? "upvotes" : "downvotes";
 
   const update = { $inc: { [voteField]: change } };
-  const opts = { new: true, session };
+  const opts = { returnDocument: "after" as const, session };
   const result =
     targetType === "question"
       ? await Question.findByIdAndUpdate(targetId, update, opts)

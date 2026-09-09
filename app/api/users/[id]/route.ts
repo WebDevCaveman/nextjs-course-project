@@ -46,8 +46,8 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     await dbConnect();
-    // W tym przypadku używamy metody findByIdAndUpdate z biblioteki mongoose, która pozwala na aktualizacje dokumentu w bazie danych na podstawie jego ID. W tym przypadku przekazujemy do tej metody ID użytkownika, który ma zostać zaktualizowany, oraz dane, które mają zostać zaktualizowane. Dodatkowo przekazujemy opcję { new: true }, która powoduje, że metoda ta zwraca zaktualizowany dokument zamiast dokumentu przed aktualizacją.
-    const updatedUser = await User.findByIdAndUpdate(id, validatedData.data, { new: true });
+    // W tym przypadku używamy metody findByIdAndUpdate z biblioteki mongoose, która pozwala na aktualizacje dokumentu w bazie danych na podstawie jego ID. W tym przypadku przekazujemy do tej metody ID użytkownika, który ma zostać zaktualizowany, oraz dane, które mają zostać zaktualizowane. Dodatkowo przekazujemy opcję { returnDocument: "after" }, która powoduje, że metoda ta zwraca zaktualizowany dokument zamiast dokumentu przed aktualizacją.
+    const updatedUser = await User.findByIdAndUpdate(id, validatedData.data, { returnDocument: "after" });
 
     if (!updatedUser) throw new NotFoundError("User");
 

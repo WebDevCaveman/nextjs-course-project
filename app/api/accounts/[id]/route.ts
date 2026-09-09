@@ -41,7 +41,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     await dbConnect();
-    const updatedAccount = await Account.findByIdAndUpdate(id, validatedData.data, { new: true });
+    const updatedAccount = await Account.findByIdAndUpdate(id, validatedData.data, { returnDocument: "after" });
 
     if (!updatedAccount) throw new NotFoundError("Account");
 
